@@ -1,0 +1,17 @@
+tunnel: 0a37b840-baeb-4f7e-8b4b-57d98fe6b5c6
+credentials-file: .cloudflare/talkfood-app.json
+
+ingress:
+  - hostname: talkfoodsoftwerk.net
+    service: http://127.0.0.1:8081
+    originRequest:
+      connectTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: true
+  - hostname: www.talkfoodsoftwerk.net
+    service: http://127.0.0.1:8081
+    originRequest:
+      connectTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: true
+  - service: http_status:404
