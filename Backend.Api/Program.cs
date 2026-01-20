@@ -13,8 +13,9 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuração de porta alternativa (8081)
-builder.WebHost.UseUrls($"http://0.0.0.0:8081");
+// Configuração de porta - usa variável de ambiente PORT (Railway) ou porta padrão
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // Add services to the container
 builder.Services.AddControllers();
