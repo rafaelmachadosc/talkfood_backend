@@ -23,14 +23,15 @@ public class OrderController : ControllerBase
     {
         try
         {
-            // Converter string "MESA"/"BALCAO" para enum
+            // Converter string "MESA"/"BALCAO" para enum (aceita orderType em camelCase do frontend)
             OrderType orderType = request.OrderType ?? OrderType.Mesa;
             
-            if (!string.IsNullOrEmpty(request.OrderTypeString))
+            var orderTypeStr = request.orderType ?? request.OrderTypeString;
+            if (!string.IsNullOrEmpty(orderTypeStr))
             {
-                if (request.OrderTypeString.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                if (orderTypeStr.Equals("MESA", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Mesa;
-                else if (request.OrderTypeString.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                else if (orderTypeStr.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
 
@@ -55,14 +56,15 @@ public class OrderController : ControllerBase
     {
         try
         {
-            // Converter string "MESA"/"BALCAO" para enum
+            // Converter string "MESA"/"BALCAO" para enum (aceita orderType em camelCase do frontend)
             OrderType orderType = request.OrderType ?? OrderType.Mesa;
             
-            if (!string.IsNullOrEmpty(request.OrderTypeString))
+            var orderTypeStr = request.orderType ?? request.OrderTypeString;
+            if (!string.IsNullOrEmpty(orderTypeStr))
             {
-                if (request.OrderTypeString.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                if (orderTypeStr.Equals("MESA", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Mesa;
-                else if (request.OrderTypeString.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                else if (orderTypeStr.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
 
@@ -187,12 +189,49 @@ public class OrderController : ControllerBase
     {
         try
         {
-            var order = await _orderService.AddItemAsync(id, request.ProductId, request.Amount, cancellationToken);
+            // Suporta ProductId em PascalCase ou camelCase
+            var productId = request.ProductId != Guid.Empty ? request.ProductId : (request.productId ?? throw new ArgumentException("Product ID é obrigatório"));
+            
+            // Suporta Amount em PascalCase ou camelCase
+            var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
+
+            var order = await _orderService.AddItemAsync(id, productId.Value, amount, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("add")]
+    public async Task<ActionResult<OrderDto>> AddItemFromBody([FromBody] AddItemRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Suporta order_id no body (formato do frontend)
+            var orderId = request.order_id ?? throw new ArgumentException("Order ID é obrigatório");
+            
+            // Suporta ProductId em PascalCase ou camelCase
+            var productId = request.ProductId != Guid.Empty ? request.ProductId : (request.productId ?? throw new ArgumentException("Product ID é obrigatório"));
+            
+            // Suporta Amount em PascalCase ou camelCase
+            var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
+
+            var order = await _orderService.AddItemAsync(orderId.Value, productId.Value, amount, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -229,7 +268,10 @@ public class OrderController : ControllerBase
 public class AddItemRequestDto
 {
     public Guid ProductId { get; set; }
+    public Guid? productId { get; set; } // camelCase do frontend
     public int Amount { get; set; }
+    public int? amount { get; set; } // camelCase do frontend
+    public Guid? order_id { get; set; } // snake_case do frontend
 }
 
 public class CreateOrderRequestDto
@@ -239,4 +281,5 @@ public class CreateOrderRequestDto
     public string? Phone { get; set; }
     public OrderType? OrderType { get; set; }
     public string? OrderTypeString { get; set; } // Aceita "MESA" ou "BALCAO" como string
+    public string? orderType { get; set; } // camelCase do frontend
 }
