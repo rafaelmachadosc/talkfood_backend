@@ -231,16 +231,55 @@ public class OrderController : ControllerBase
         try
         {
             // Suporta order_id no body (formato do frontend)
-            if (!request.order_id.HasValue)
+            Guid orderId;
+            if (request.order_id != null)
+            {
+                // Pode ser Guid ou string
+                if (request.order_id is Guid guid)
+                {
+                    orderId = guid;
+                }
+                else if (request.order_id is string str && Guid.TryParse(str, out var parsedGuid))
+                {
+                    orderId = parsedGuid;
+                }
+                else
+                {
+                    throw new ArgumentException("Order ID inválido");
+                }
+            }
+            else
+            {
                 throw new ArgumentException("Order ID é obrigatório");
+            }
             
-            // Suporta ProductId em PascalCase ou camelCase
-            var productId = request.ProductId != Guid.Empty ? request.ProductId : (request.productId ?? throw new ArgumentException("Product ID é obrigatório"));
+            // Suporta product_id como Guid ou string
+            Guid productId;
+            if (request.product_id != null)
+            {
+                // Pode ser Guid ou string
+                if (request.product_id is Guid guid)
+                {
+                    productId = guid;
+                }
+                else if (request.product_id is string str && Guid.TryParse(str, out var parsedGuid))
+                {
+                    productId = parsedGuid;
+                }
+                else
+                {
+                    throw new ArgumentException("Product ID inválido");
+                }
+            }
+            else
+            {
+                throw new ArgumentException("Product ID é obrigatório");
+            }
             
-            // Suporta Amount em PascalCase ou camelCase
-            var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
+            // Suporta amount
+            var amount = request.amount ?? throw new ArgumentException("Amount é obrigatório");
 
-            var order = await _orderService.AddItemAsync(request.order_id.Value, productId, amount, cancellationToken);
+            var order = await _orderService.AddItemAsync(orderId, productId, amount, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
