@@ -23,11 +23,22 @@ public class OrderController : ControllerBase
     {
         try
         {
+            // Converter string "MESA"/"BALCAO" para enum
+            OrderType orderType = request.OrderType ?? OrderType.Mesa;
+            
+            if (!string.IsNullOrEmpty(request.OrderTypeString))
+            {
+                if (request.OrderTypeString.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Mesa;
+                else if (request.OrderTypeString.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Balcao;
+            }
+
             var order = await _orderService.CreateOrderAsync(
                 request.Table,
                 request.Name,
                 request.Phone,
-                request.OrderType ?? OrderType.Mesa,
+                orderType,
                 cancellationToken
             );
             return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
@@ -44,11 +55,22 @@ public class OrderController : ControllerBase
     {
         try
         {
+            // Converter string "MESA"/"BALCAO" para enum
+            OrderType orderType = request.OrderType ?? OrderType.Mesa;
+            
+            if (!string.IsNullOrEmpty(request.OrderTypeString))
+            {
+                if (request.OrderTypeString.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Mesa;
+                else if (request.OrderTypeString.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Balcao;
+            }
+
             var order = await _orderService.CreateOrderAsync(
                 request.Table,
                 request.Name,
                 request.Phone,
-                request.OrderType ?? OrderType.Mesa,
+                orderType,
                 cancellationToken
             );
             return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
@@ -216,4 +238,5 @@ public class CreateOrderRequestDto
     public string? Name { get; set; }
     public string? Phone { get; set; }
     public OrderType? OrderType { get; set; }
+    public string? OrderTypeString { get; set; } // Aceita "MESA" ou "BALCAO" como string
 }
