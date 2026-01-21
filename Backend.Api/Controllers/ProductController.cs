@@ -23,15 +23,29 @@ public class ProductController : ControllerBase
         try
         {
             // Suporta CategoryId em PascalCase, camelCase ou snake_case
-            var categoryId = request.CategoryId != Guid.Empty 
-                ? request.CategoryId 
-                : (request.categoryId ?? request.category_id ?? throw new ArgumentException("Category ID é obrigatório"));
+            Guid categoryId;
+            if (request.CategoryId != Guid.Empty)
+            {
+                categoryId = request.CategoryId;
+            }
+            else if (request.categoryId.HasValue)
+            {
+                categoryId = request.categoryId.Value;
+            }
+            else if (request.category_id.HasValue)
+            {
+                categoryId = request.category_id.Value;
+            }
+            else
+            {
+                throw new ArgumentException("Category ID é obrigatório");
+            }
 
             var product = await _productService.CreateProductAsync(
                 request.Name,
                 request.Price,
                 request.Description,
-                categoryId.Value,
+                categoryId,
                 cancellationToken
             );
             return Ok(product);

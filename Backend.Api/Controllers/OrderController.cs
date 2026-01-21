@@ -261,17 +261,43 @@ public class OrderController : ControllerBase
         try
         {
             // Suporta ID na URL ou no body
-            var orderId = id ?? request.order_id ?? throw new ArgumentException("Order ID é obrigatório");
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (request.order_id.HasValue)
+            {
+                orderId = request.order_id.Value;
+            }
+            else
+            {
+                throw new ArgumentException("Order ID é obrigatório");
+            }
             
             // Suporta ProductId em PascalCase, camelCase ou snake_case
-            var productId = request.ProductId != Guid.Empty 
-                ? request.ProductId 
-                : (request.productId ?? (request.product_id ?? throw new ArgumentException("Product ID é obrigatório")));
+            Guid productId;
+            if (request.ProductId != Guid.Empty)
+            {
+                productId = request.ProductId;
+            }
+            else if (request.productId.HasValue)
+            {
+                productId = request.productId.Value;
+            }
+            else if (request.product_id.HasValue)
+            {
+                productId = request.product_id.Value;
+            }
+            else
+            {
+                throw new ArgumentException("Product ID é obrigatório");
+            }
             
             // Suporta Amount em PascalCase ou camelCase
             var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
 
-            var order = await _orderService.AddItemAsync(orderId.Value, productId.Value, amount, cancellationToken);
+            var order = await _orderService.AddItemAsync(orderId, productId, amount, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
