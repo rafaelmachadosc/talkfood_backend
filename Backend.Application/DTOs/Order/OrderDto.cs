@@ -11,7 +11,9 @@ public class OrderDto
     public bool Draft { get; set; }
     public string? Name { get; set; }
     public string? Phone { get; set; }
-    public OrderType OrderType { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public OrderType OrderType { get; set; } // Enum interno
+    public string orderType { get; set; } = string.Empty; // String para frontend: "MESA" ou "BALCAO"
     public bool Viewed { get; set; }
     public List<ItemDto> Items { get; set; } = new();
     public DateTime CreatedAt { get; set; }

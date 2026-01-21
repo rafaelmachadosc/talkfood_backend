@@ -8,6 +8,7 @@ namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/caixa")] // Rota alternativa em português
 [Authorize]
 public class CashierController : ControllerBase
 {

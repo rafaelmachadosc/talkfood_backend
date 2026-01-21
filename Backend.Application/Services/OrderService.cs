@@ -166,6 +166,7 @@ public class OrderService
             Name = order.Name,
             Phone = order.Phone,
             OrderType = order.OrderType,
+            orderType = order.OrderType == OrderType.Mesa ? "MESA" : "BALCAO", // Converter para string
             Viewed = order.Viewed,
             Items = order.Items.Select(i => new ItemDto
             {

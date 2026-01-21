@@ -266,36 +266,52 @@ public class OrderController : ControllerBase
             {
                 orderId = id.Value;
             }
-            else if (request.order_id.HasValue)
+            else if (request.order_id != null)
             {
-                orderId = request.order_id.Value;
+                // Pode ser Guid ou string
+                if (request.order_id is Guid guid)
+                {
+                    orderId = guid;
+                }
+                else if (request.order_id is string str && Guid.TryParse(str, out var parsedGuid))
+                {
+                    orderId = parsedGuid;
+                }
+                else
+                {
+                    throw new ArgumentException("Order ID inválido");
+                }
             }
             else
             {
                 throw new ArgumentException("Order ID é obrigatório");
             }
             
-            // Suporta ProductId em PascalCase, camelCase ou snake_case
+            // Suporta product_id como Guid ou string
             Guid productId;
-            if (request.ProductId != Guid.Empty)
+            if (request.product_id != null)
             {
-                productId = request.ProductId;
-            }
-            else if (request.productId.HasValue)
-            {
-                productId = request.productId.Value;
-            }
-            else if (request.product_id.HasValue)
-            {
-                productId = request.product_id.Value;
+                // Pode ser Guid ou string
+                if (request.product_id is Guid guid)
+                {
+                    productId = guid;
+                }
+                else if (request.product_id is string str && Guid.TryParse(str, out var parsedGuid))
+                {
+                    productId = parsedGuid;
+                }
+                else
+                {
+                    throw new ArgumentException("Product ID inválido");
+                }
             }
             else
             {
                 throw new ArgumentException("Product ID é obrigatório");
             }
             
-            // Suporta Amount em PascalCase ou camelCase
-            var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
+            // Suporta amount
+            var amount = request.amount ?? throw new ArgumentException("Amount é obrigatório");
 
             var order = await _orderService.AddItemAsync(orderId, productId, amount, cancellationToken);
             return Ok(order);
@@ -327,12 +343,18 @@ public class OrderController : ControllerBase
 
 public class AddItemRequestDto
 {
-    public Guid ProductId { get; set; }
-    public Guid? productId { get; set; } // camelCase do frontend
-    public Guid? product_id { get; set; } // snake_case do frontend
-    public int Amount { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid ProductId { get; set; } // Ignorado no JSON
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid? productId { get; set; } // Ignorado no JSON
+    [System.Text.Json.Serialization.JsonPropertyName("product_id")]
+    public object? product_id { get; set; } // snake_case do frontend - pode ser Guid ou string
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int Amount { get; set; } // Ignorado no JSON
+    [System.Text.Json.Serialization.JsonPropertyName("amount")]
     public int? amount { get; set; } // camelCase do frontend
-    public Guid? order_id { get; set; } // snake_case do frontend
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public object? order_id { get; set; } // snake_case do frontend - pode ser Guid ou string
 }
 
 public class CreateOrderRequestDto

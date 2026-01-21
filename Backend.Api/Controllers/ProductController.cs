@@ -22,23 +22,27 @@ public class ProductController : ControllerBase
     {
         try
         {
-            // Suporta CategoryId em PascalCase, camelCase ou snake_case
+            // Suporta category_id como Guid ou string
             Guid categoryId;
-            if (request.CategoryId != Guid.Empty)
+            if (request.category_id != null)
             {
-                categoryId = request.CategoryId;
-            }
-            else if (request.categoryId.HasValue)
-            {
-                categoryId = request.categoryId.Value;
-            }
-            else if (request.category_id.HasValue)
-            {
-                categoryId = request.category_id.Value;
+                // Pode ser Guid ou string
+                if (request.category_id is Guid guid)
+                {
+                    categoryId = guid;
+                }
+                else if (request.category_id is string str && Guid.TryParse(str, out var parsedGuid))
+                {
+                    categoryId = parsedGuid;
+                }
+                else
+                {
+                    return BadRequest(new { error = "Category ID inválido" });
+                }
             }
             else
             {
-                throw new ArgumentException("Category ID é obrigatório");
+                return BadRequest(new { error = "Category ID é obrigatório" });
             }
 
             var product = await _productService.CreateProductAsync(
@@ -126,9 +130,12 @@ public class CreateProductRequestDto
     public string Name { get; set; } = string.Empty;
     public int Price { get; set; }
     public string Description { get; set; } = string.Empty;
-    public Guid CategoryId { get; set; }
-    public Guid? categoryId { get; set; } // camelCase do frontend
-    public Guid? category_id { get; set; } // snake_case do frontend
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid CategoryId { get; set; } // Ignorado no JSON
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Guid? categoryId { get; set; } // Ignorado no JSON
+    [System.Text.Json.Serialization.JsonPropertyName("category_id")]
+    public object? category_id { get; set; } // snake_case do frontend - pode ser Guid ou string
 }
 
 public class UpdateProductRequestDto
