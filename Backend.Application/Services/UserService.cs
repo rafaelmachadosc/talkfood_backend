@@ -39,7 +39,7 @@ public class UserService
             Id = createdUser.Id,
             Name = createdUser.Name,
             Email = createdUser.Email,
-            Role = createdUser.Role
+            Role = createdUser.Role.ToString().ToUpper() // Converter para "ADMIN" ou "STAFF"
         };
     }
 
@@ -57,7 +57,7 @@ public class UserService
             Id = user.Id,
             Name = user.Name,
             Email = user.Email,
-            Role = user.Role
+            Role = user.Role.ToString().ToUpper() // Converter para "ADMIN" ou "STAFF"
         };
     }
 }

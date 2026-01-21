@@ -60,9 +60,19 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<OrderDto>>> GetAllOrders(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<OrderDto>>> GetAllOrders([FromQuery] bool? draft, CancellationToken cancellationToken)
     {
-        var orders = await _orderService.GetAllOrdersAsync(cancellationToken);
+        IEnumerable<OrderDto> orders;
+        
+        if (draft.HasValue && draft.Value)
+        {
+            orders = await _orderService.GetDraftOrdersAsync(cancellationToken);
+        }
+        else
+        {
+            orders = await _orderService.GetAllOrdersAsync(cancellationToken);
+        }
+        
         return Ok(orders);
     }
 

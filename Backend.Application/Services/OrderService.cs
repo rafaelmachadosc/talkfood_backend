@@ -92,6 +92,12 @@ public class OrderService
         return orders.Select(MapToDto);
     }
 
+    public async Task<IEnumerable<OrderDto>> GetDraftOrdersAsync(CancellationToken cancellationToken = default)
+    {
+        var orders = await _orderRepository.GetDraftOrdersAsync(cancellationToken);
+        return orders.Select(MapToDto);
+    }
+
     public async Task<IEnumerable<OrderDto>> GetOrdersByTableAsync(int table, string? phone, CancellationToken cancellationToken = default)
     {
         var orders = await _orderRepository.GetByTableAsync(table, phone, cancellationToken);
