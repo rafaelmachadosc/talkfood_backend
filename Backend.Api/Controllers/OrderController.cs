@@ -12,9 +12,6 @@ namespace Backend.Api.Controllers;
 [Authorize]
 public class OrderController : ControllerBase
 {
-    // Endpoints públicos sem autenticação
-}
-{
     private readonly OrderService _orderService;
 
     public OrderController(OrderService orderService)
