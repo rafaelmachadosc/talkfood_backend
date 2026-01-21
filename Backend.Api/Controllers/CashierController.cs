@@ -36,7 +36,8 @@ public class CashierController : ControllerBase
                 return Unauthorized(new { error = "Token inválido" });
             }
 
-            var cashier = await _cashierService.OpenCashierAsync(request.InitialAmount, userId, cancellationToken);
+            var amount = request.InitialAmount != 0 ? request.InitialAmount : (request.initialAmount ?? 0);
+            var cashier = await _cashierService.OpenCashierAsync(amount, userId, cancellationToken);
             return Ok(cashier);
         }
         catch (InvalidOperationException ex)
@@ -63,4 +64,5 @@ public class CashierController : ControllerBase
 public class OpenCashierRequestDto
 {
     public int InitialAmount { get; set; }
+    public int? initialAmount { get; set; } // camelCase do frontend
 }

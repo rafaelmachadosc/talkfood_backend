@@ -254,17 +254,33 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost("public/{id}/add")]
+    [HttpPost("public/add")] // Aceita também /api/order/public/add com order_id no body
     [AllowAnonymous]
-    public async Task<ActionResult<OrderDto>> AddItemPublic(Guid id, [FromBody] AddItemRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<OrderDto>> AddItemPublic(Guid? id, [FromBody] AddItemRequestDto request, CancellationToken cancellationToken)
     {
         try
         {
-            var order = await _orderService.AddItemAsync(id, request.ProductId, request.Amount, cancellationToken);
+            // Suporta ID na URL ou no body
+            var orderId = id ?? request.order_id ?? throw new ArgumentException("Order ID é obrigatório");
+            
+            // Suporta ProductId em PascalCase, camelCase ou snake_case
+            var productId = request.ProductId != Guid.Empty 
+                ? request.ProductId 
+                : (request.productId ?? (request.product_id ?? throw new ArgumentException("Product ID é obrigatório")));
+            
+            // Suporta Amount em PascalCase ou camelCase
+            var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
+
+            var order = await _orderService.AddItemAsync(orderId.Value, productId.Value, amount, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -287,6 +303,7 @@ public class AddItemRequestDto
 {
     public Guid ProductId { get; set; }
     public Guid? productId { get; set; } // camelCase do frontend
+    public Guid? product_id { get; set; } // snake_case do frontend
     public int Amount { get; set; }
     public int? amount { get; set; } // camelCase do frontend
     public Guid? order_id { get; set; } // snake_case do frontend
