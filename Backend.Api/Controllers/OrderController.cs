@@ -8,6 +8,7 @@ namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/orders")] // Rota alternativa para compatibilidade com frontend
 [Authorize]
 public class OrderController : ControllerBase
 {
@@ -34,6 +35,17 @@ public class OrderController : ControllerBase
                     orderType = OrderType.Balcao;
             }
 
+            // Validação: MESA precisa de table, BALCAO precisa de name
+            if (orderType == OrderType.Mesa && !request.Table.HasValue)
+            {
+                return BadRequest(new { error = "Número da mesa é obrigatório para pedidos de mesa" });
+            }
+            
+            if (orderType == OrderType.Balcao && string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(new { error = "Nome do cliente é obrigatório para pedidos de balcão" });
+            }
+
             var order = await _orderService.CreateOrderAsync(
                 request.Table,
                 request.Name,
@@ -45,7 +57,7 @@ public class OrderController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { error = ex.Message, details = ex.ToString() });
         }
     }
 
@@ -82,6 +94,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet]
+    [HttpGet("orders")] // Suporta também /api/order/orders para compatibilidade
     public async Task<ActionResult<IEnumerable<OrderDto>>> GetAllOrders([FromQuery] bool? draft, CancellationToken cancellationToken)
     {
         IEnumerable<OrderDto> orders;
@@ -89,6 +102,12 @@ public class OrderController : ControllerBase
         if (draft.HasValue && draft.Value)
         {
             orders = await _orderService.GetDraftOrdersAsync(cancellationToken);
+        }
+        else if (draft.HasValue && !draft.Value)
+        {
+            // Se draft=false, retornar apenas não-draft (finalizados)
+            var allOrders = await _orderService.GetAllOrdersAsync(cancellationToken);
+            orders = allOrders.Where(o => !o.Draft);
         }
         else
         {
