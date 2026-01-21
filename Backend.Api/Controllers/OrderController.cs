@@ -26,12 +26,11 @@ public class OrderController : ControllerBase
             // Converter string "MESA"/"BALCAO" para enum (aceita orderType em camelCase do frontend)
             OrderType orderType = request.OrderType ?? OrderType.Mesa;
             
-            var orderTypeStr = request.orderType ?? request.OrderTypeString;
-            if (!string.IsNullOrEmpty(orderTypeStr))
+            if (!string.IsNullOrEmpty(request.orderType))
             {
-                if (orderTypeStr.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                if (request.orderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Mesa;
-                else if (orderTypeStr.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                else if (request.orderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
 
@@ -59,12 +58,11 @@ public class OrderController : ControllerBase
             // Converter string "MESA"/"BALCAO" para enum (aceita orderType em camelCase do frontend)
             OrderType orderType = request.OrderType ?? OrderType.Mesa;
             
-            var orderTypeStr = request.orderType ?? request.OrderTypeString;
-            if (!string.IsNullOrEmpty(orderTypeStr))
+            if (!string.IsNullOrEmpty(request.orderType))
             {
-                if (orderTypeStr.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                if (request.orderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Mesa;
-                else if (orderTypeStr.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                else if (request.orderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
 
@@ -280,7 +278,9 @@ public class CreateOrderRequestDto
     public int? Table { get; set; }
     public string? Name { get; set; }
     public string? Phone { get; set; }
-    public OrderType? OrderType { get; set; }
-    public string? OrderTypeString { get; set; } // Aceita "MESA" ou "BALCAO" como string
-    public string? orderType { get; set; } // camelCase do frontend
+    [System.Text.Json.Serialization.JsonIgnore]
+    public OrderType? OrderType { get; set; } // Ignorado no JSON, usado apenas internamente
+    public string? orderType { get; set; } // camelCase do frontend - aceita "MESA" ou "BALCAO"
+    [System.Text.Json.Serialization.JsonIgnore]
+    public object? items { get; set; } // Ignorado - frontend envia array vazio, mas não é usado
 }
