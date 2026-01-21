@@ -195,7 +195,7 @@ public class OrderController : ControllerBase
             // Suporta Amount em PascalCase ou camelCase
             var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
 
-            var order = await _orderService.AddItemAsync(id, productId.Value, amount, cancellationToken);
+            var order = await _orderService.AddItemAsync(id, productId, amount, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
@@ -214,7 +214,8 @@ public class OrderController : ControllerBase
         try
         {
             // Suporta order_id no body (formato do frontend)
-            var orderId = request.order_id ?? throw new ArgumentException("Order ID é obrigatório");
+            if (!request.order_id.HasValue)
+                throw new ArgumentException("Order ID é obrigatório");
             
             // Suporta ProductId em PascalCase ou camelCase
             var productId = request.ProductId != Guid.Empty ? request.ProductId : (request.productId ?? throw new ArgumentException("Product ID é obrigatório"));
@@ -222,7 +223,7 @@ public class OrderController : ControllerBase
             // Suporta Amount em PascalCase ou camelCase
             var amount = request.Amount != 0 ? request.Amount : (request.amount ?? throw new ArgumentException("Amount é obrigatório"));
 
-            var order = await _orderService.AddItemAsync(orderId.Value, productId.Value, amount, cancellationToken);
+            var order = await _orderService.AddItemAsync(request.order_id.Value, productId, amount, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
