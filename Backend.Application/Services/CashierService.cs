@@ -120,4 +120,48 @@ public class CashierService
             TotalOrders = activeCashier.TotalOrders
         };
     }
+
+    public async Task<CashierMovementDto> ReceivePaymentAsync(Guid orderId, int amount, string paymentMethod, int? receivedAmount, CancellationToken cancellationToken = default)
+    {
+        var cashiers = await _cashierRepository.GetAllAsync(cancellationToken);
+        var activeCashier = cashiers.FirstOrDefault(c => c.IsOpen);
+
+        if (activeCashier == null)
+        {
+            throw new InvalidOperationException("Nenhum caixa está aberto");
+        }
+
+        if (receivedAmount.HasValue && receivedAmount.Value < amount)
+        {
+            throw new InvalidOperationException("Valor recebido não pode ser menor que o valor total");
+        }
+
+        int change = receivedAmount.HasValue ? receivedAmount.Value - amount : 0;
+
+        var movement = new CashierMovement
+        {
+            Type = "SALE",
+            Amount = amount,
+            Observation = $"Pagamento do pedido {orderId} - Método: {paymentMethod}" + (change > 0 ? $" - Troco: {change}" : ""),
+            CashierId = activeCashier.Id
+        };
+
+        activeCashier.Movements.Add(movement);
+        activeCashier.CurrentAmount += amount;
+        activeCashier.TotalSales += amount;
+        activeCashier.TotalOrders += 1;
+
+        await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
+
+        return new CashierMovementDto
+        {
+            Id = movement.Id,
+            Type = movement.Type,
+            Amount = movement.Amount,
+            Observation = movement.Observation,
+            CashierId = movement.CashierId,
+            CreatedAt = movement.CreatedAt,
+            Change = change
+        };
+    }
 }

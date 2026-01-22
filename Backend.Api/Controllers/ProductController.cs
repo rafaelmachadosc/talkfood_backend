@@ -2,11 +2,13 @@ using Backend.Application.DTOs.Product;
 using Backend.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/products")] // Rota alternativa para compatibilidade com frontend
 public class ProductController : ControllerBase
 {
     private readonly ProductService _productService;
@@ -22,22 +24,28 @@ public class ProductController : ControllerBase
     {
         try
         {
-            // Suporta category_id como Guid ou string
-            Guid categoryId;
+            // Suporta category_id como Guid ou string (vindo do JSON como string)
+            Guid categoryId = Guid.Empty;
+            
             if (request.category_id != null)
             {
-                // Pode ser Guid ou string
-                if (request.category_id is Guid guid)
+                // Converter qualquer tipo para string e depois para Guid
+                string categoryIdStr = request.category_id switch
                 {
-                    categoryId = guid;
+                    Guid g => g.ToString(),
+                    string s => s,
+                    System.Text.Json.JsonElement jsonElement => jsonElement.GetString() ?? string.Empty,
+                    _ => request.category_id.ToString() ?? string.Empty
+                };
+                
+                if (string.IsNullOrWhiteSpace(categoryIdStr))
+                {
+                    return BadRequest(new { error = "Category ID não pode ser vazio" });
                 }
-                else if (request.category_id is string str && Guid.TryParse(str, out var parsedGuid))
+                
+                if (!Guid.TryParse(categoryIdStr, out categoryId))
                 {
-                    categoryId = parsedGuid;
-                }
-                else
-                {
-                    return BadRequest(new { error = "Category ID inválido" });
+                    return BadRequest(new { error = $"Category ID inválido: '{categoryIdStr}'. Deve ser um GUID válido." });
                 }
             }
             else
@@ -65,6 +73,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet]
+    [HttpGet("products")] // Suporta também /api/product/products
     [Authorize]
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetAllProducts([FromQuery] bool? disabled, CancellationToken cancellationToken)
     {

@@ -154,6 +154,20 @@ public class OrderService
         await _orderRepository.DeleteAsync(order, cancellationToken);
     }
 
+    public async Task<OrderDto> MarkAsViewedAsync(Guid orderId, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        if (order == null)
+        {
+            throw new KeyNotFoundException("Pedido não encontrado");
+        }
+
+        order.Viewed = true;
+        await _orderRepository.UpdateAsync(order, cancellationToken);
+
+        return MapToDto(order);
+    }
+
     private static OrderDto MapToDto(Order order)
     {
         return new OrderDto

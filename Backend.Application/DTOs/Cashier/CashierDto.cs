@@ -12,3 +12,14 @@ public class CashierDto
     public int TotalSales { get; set; }
     public int TotalOrders { get; set; }
 }
+
+public class CashierMovementDto
+{
+    public Guid Id { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public int Amount { get; set; }
+    public string? Observation { get; set; }
+    public Guid CashierId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int Change { get; set; } = 0;
+}

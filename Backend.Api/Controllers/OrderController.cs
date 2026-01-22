@@ -118,11 +118,29 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<OrderDto>> GetOrder(Guid id, CancellationToken cancellationToken)
+    [HttpGet("detail")] // Suporta /api/order/detail?order_id={id}
+    public async Task<ActionResult<OrderDto>> GetOrder(Guid? id, [FromQuery] string? order_id, CancellationToken cancellationToken)
     {
         try
         {
-            var order = await _orderService.GetOrderByIdAsync(id, cancellationToken);
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (!string.IsNullOrEmpty(order_id))
+            {
+                if (!Guid.TryParse(order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            var order = await _orderService.GetOrderByIdAsync(orderId, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
@@ -145,11 +163,29 @@ public class OrderController : ControllerBase
     }
 
     [HttpPut("{id}/send")]
-    public async Task<ActionResult<OrderDto>> SendOrder(Guid id, CancellationToken cancellationToken)
+    [HttpPut("send")] // Suporta também /api/order/send com order_id no body
+    public async Task<ActionResult<OrderDto>> SendOrder(Guid? id, [FromBody] SendOrderRequestDto? request, CancellationToken cancellationToken)
     {
         try
         {
-            var order = await _orderService.SendOrderAsync(id, cancellationToken);
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (request != null && !string.IsNullOrEmpty(request.order_id))
+            {
+                if (!Guid.TryParse(request.order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            var order = await _orderService.SendOrderAsync(orderId, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
@@ -174,11 +210,53 @@ public class OrderController : ControllerBase
     }
 
     [HttpPut("{id}/finish")]
-    public async Task<ActionResult<OrderDto>> FinishOrder(Guid id, CancellationToken cancellationToken)
+    [HttpPut("finish")] // Suporta também /api/order/finish com order_id no body
+    public async Task<ActionResult<OrderDto>> FinishOrder(Guid? id, [FromBody] FinishOrderRequestDto? request, CancellationToken cancellationToken)
     {
         try
         {
-            var order = await _orderService.FinishOrderAsync(id, cancellationToken);
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (request != null && !string.IsNullOrEmpty(request.order_id))
+            {
+                if (!Guid.TryParse(request.order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            var order = await _orderService.FinishOrderAsync(orderId, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("viewed")] // PUT /api/order/viewed com order_id no body
+    public async Task<ActionResult<OrderDto>> MarkAsViewed([FromBody] ViewedOrderRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.order_id))
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            if (!Guid.TryParse(request.order_id, out var orderId))
+            {
+                return BadRequest(new { error = "Order ID inválido" });
+            }
+
+            var order = await _orderService.MarkAsViewedAsync(orderId, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
@@ -188,11 +266,29 @@ public class OrderController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteOrder(Guid id, CancellationToken cancellationToken)
+    [HttpDelete] // Suporta também /api/order?order_id={id}
+    public async Task<ActionResult> DeleteOrder(Guid? id, [FromQuery] string? order_id, CancellationToken cancellationToken)
     {
         try
         {
-            await _orderService.DeleteOrderAsync(id, cancellationToken);
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (!string.IsNullOrEmpty(order_id))
+            {
+                if (!Guid.TryParse(order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            await _orderService.DeleteOrderAsync(orderId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -394,6 +490,25 @@ public class AddItemRequestDto
     public int? amount { get; set; } // camelCase do frontend
     [System.Text.Json.Serialization.JsonPropertyName("order_id")]
     public object? order_id { get; set; } // snake_case do frontend - pode ser Guid ou string
+}
+
+public class SendOrderRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+    public string? name { get; set; } // opcional
+}
+
+public class FinishOrderRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+}
+
+public class ViewedOrderRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
 }
 
 public class CreateOrderRequestDto
