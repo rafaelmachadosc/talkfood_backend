@@ -3,6 +3,7 @@ using Backend.Application.Services;
 using Backend.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Backend.Api.Controllers;
 
@@ -91,53 +92,10 @@ public class PublicOrderController : ControllerBase
     {
         try
         {
-            // Suporta order_id como Guid ou string
-            Guid orderId;
-            if (request.order_id != null)
-            {
-                if (request.order_id is Guid guid)
-                {
-                    orderId = guid;
-                }
-                else if (request.order_id is string str && Guid.TryParse(str, out var parsedGuid))
-                {
-                    orderId = parsedGuid;
-                }
-                else
-                {
-                    return BadRequest(new { error = "Order ID inválido" });
-                }
-            }
-            else
-            {
-                return BadRequest(new { error = "Order ID é obrigatório" });
-            }
+            var orderId = ParseGuidFromObject(request.order_id, "Order ID");
+            var productId = ParseGuidFromObject(request.product_id, "Product ID");
+            var amount = ParseIntFromObject(request.amount, "Amount");
             
-            // Suporta product_id como Guid ou string
-            Guid productId;
-            if (request.product_id != null)
-            {
-                if (request.product_id is Guid guid)
-                {
-                    productId = guid;
-                }
-                else if (request.product_id is string str && Guid.TryParse(str, out var parsedGuid))
-                {
-                    productId = parsedGuid;
-                }
-                else
-                {
-                    return BadRequest(new { error = "Product ID inválido" });
-                }
-            }
-            else
-            {
-                return BadRequest(new { error = "Product ID é obrigatório" });
-            }
-            
-            // Suporta amount
-            var amount = request.amount ?? throw new ArgumentException("Amount é obrigatório");
-
             var order = await _orderService.AddItemAsync(orderId, productId, amount, cancellationToken);
             return Ok(order);
         }
@@ -149,6 +107,34 @@ public class PublicOrderController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    private Guid ParseGuidFromObject(object? obj, string fieldName)
+    {
+        if (obj == null) throw new ArgumentException($"{fieldName} é obrigatório");
+
+        if (obj is Guid guid) return guid;
+        if (obj is string str && Guid.TryParse(str, out var parsedGuid)) return parsedGuid;
+        if (obj is JsonElement jsonElement)
+        {
+            if (jsonElement.ValueKind == JsonValueKind.String && Guid.TryParse(jsonElement.GetString(), out parsedGuid)) return parsedGuid;
+        }
+        throw new ArgumentException($"{fieldName} inválido");
+    }
+
+    private int ParseIntFromObject(object? obj, string fieldName)
+    {
+        if (obj == null) throw new ArgumentException($"{fieldName} é obrigatório");
+
+        if (obj is int i) return i;
+        if (obj is long l) return (int)l; // JSON numbers can be long
+        if (obj is string str && int.TryParse(str, out var parsedInt)) return parsedInt;
+        if (obj is JsonElement jsonElement)
+        {
+            if (jsonElement.ValueKind == JsonValueKind.Number) return jsonElement.GetInt32();
+            if (jsonElement.ValueKind == JsonValueKind.String && int.TryParse(jsonElement.GetString(), out parsedInt)) return parsedInt;
+        }
+        throw new ArgumentException($"{fieldName} inválido");
     }
 
     [HttpPut("send")]
