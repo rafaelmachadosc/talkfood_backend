@@ -1,4 +1,5 @@
 using Backend.Application.DTOs.Product;
+using Backend.Application.DTOs.Category;
 using Backend.Application.Interfaces;
 using Backend.Domain.Entities;
 
@@ -33,15 +34,23 @@ public class ProductService
 
         var createdProduct = await _productRepository.AddAsync(product, cancellationToken);
 
+        // Recarregar produto com categoria
+        var productWithCategory = await _productRepository.GetByIdAsync(createdProduct.Id, cancellationToken);
+        
         return new ProductDto
         {
-            Id = createdProduct.Id,
-            Name = createdProduct.Name,
-            Price = createdProduct.Price,
-            Description = createdProduct.Description,
-            Disabled = createdProduct.Disabled,
-            CategoryId = createdProduct.CategoryId,
-            CreatedAt = createdProduct.CreatedAt
+            Id = productWithCategory!.Id,
+            Name = productWithCategory.Name,
+            Price = productWithCategory.Price,
+            Description = productWithCategory.Description,
+            Disabled = productWithCategory.Disabled,
+            CategoryId = productWithCategory.CategoryId,
+            Category = productWithCategory.Category != null ? new CategoryDto
+            {
+                Id = productWithCategory.Category.Id,
+                Name = productWithCategory.Category.Name
+            } : null,
+            CreatedAt = productWithCategory.CreatedAt
         };
     }
 
@@ -59,6 +68,11 @@ public class ProductService
             Description = p.Description,
             Disabled = p.Disabled,
             CategoryId = p.CategoryId,
+            Category = p.Category != null ? new CategoryDto
+            {
+                Id = p.Category.Id,
+                Name = p.Category.Name
+            } : null,
             CreatedAt = p.CreatedAt
         });
     }
@@ -75,6 +89,11 @@ public class ProductService
             Description = p.Description,
             Disabled = p.Disabled,
             CategoryId = p.CategoryId,
+            Category = p.Category != null ? new CategoryDto
+            {
+                Id = p.Category.Id,
+                Name = p.Category.Name
+            } : null,
             CreatedAt = p.CreatedAt
         });
     }
@@ -94,15 +113,23 @@ public class ProductService
 
         await _productRepository.UpdateAsync(product, cancellationToken);
 
+        // Recarregar produto com categoria
+        var updatedProduct = await _productRepository.GetByIdAsync(id, cancellationToken);
+
         return new ProductDto
         {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Description = product.Description,
-            Disabled = product.Disabled,
-            CategoryId = product.CategoryId,
-            CreatedAt = product.CreatedAt
+            Id = updatedProduct!.Id,
+            Name = updatedProduct.Name,
+            Price = updatedProduct.Price,
+            Description = updatedProduct.Description,
+            Disabled = updatedProduct.Disabled,
+            CategoryId = updatedProduct.CategoryId,
+            Category = updatedProduct.Category != null ? new CategoryDto
+            {
+                Id = updatedProduct.Category.Id,
+                Name = updatedProduct.Category.Name
+            } : null,
+            CreatedAt = updatedProduct.CreatedAt
         };
     }
 

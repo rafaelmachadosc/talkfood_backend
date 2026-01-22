@@ -119,12 +119,30 @@ public class ProductController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HttpDelete] // Suporta também /api/product?product_id={id}
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult> DeleteProduct(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteProduct(Guid? id, [FromQuery] string? product_id, CancellationToken cancellationToken)
     {
         try
         {
-            await _productService.DeleteProductAsync(id, cancellationToken);
+            Guid productId;
+            if (id.HasValue)
+            {
+                productId = id.Value;
+            }
+            else if (!string.IsNullOrEmpty(product_id))
+            {
+                if (!Guid.TryParse(product_id, out productId))
+                {
+                    return BadRequest(new { error = "Product ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Product ID é obrigatório" });
+            }
+
+            await _productService.DeleteProductAsync(productId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
