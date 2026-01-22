@@ -37,7 +37,12 @@ public class CashierController : ControllerBase
                 return Unauthorized(new { error = "Token inválido" });
             }
 
-            var amount = request.InitialAmount != 0 ? request.InitialAmount : (request.initialAmount ?? 0);
+            // Aceita initialAmount (camelCase) do frontend
+            var amount = request.initialAmount ?? request.InitialAmount;
+            if (amount <= 0)
+            {
+                return BadRequest(new { error = "Valor inicial deve ser maior que zero" });
+            }
             var cashier = await _cashierService.OpenCashierAsync(amount, userId, cancellationToken);
             return Ok(cashier);
         }
@@ -114,7 +119,9 @@ public class CashierController : ControllerBase
 
 public class OpenCashierRequestDto
 {
+    [System.Text.Json.Serialization.JsonIgnore]
     public int InitialAmount { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("initialAmount")]
     public int? initialAmount { get; set; } // camelCase do frontend
 }
 
