@@ -98,6 +98,12 @@ public class OrderService
         return orders.Select(MapToDto);
     }
 
+    public async Task<IEnumerable<OrderDto>> GetNonDraftOrdersAsync(CancellationToken cancellationToken = default)
+    {
+        var orders = await _orderRepository.GetNonDraftOrdersAsync(cancellationToken);
+        return orders.Select(MapToDto);
+    }
+
     public async Task<IEnumerable<OrderDto>> GetOrdersByTableAsync(int table, string? phone, CancellationToken cancellationToken = default)
     {
         var orders = await _orderRepository.GetByTableAsync(table, phone, cancellationToken);
@@ -126,7 +132,9 @@ public class OrderService
         order.Draft = false;
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
-        return MapToDto(order);
+        // Recarregar o pedido completo com itens após atualizar
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
     }
 
     public async Task<OrderDto> FinishOrderAsync(Guid orderId, CancellationToken cancellationToken = default)
@@ -140,7 +148,9 @@ public class OrderService
         order.Status = true;
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
-        return MapToDto(order);
+        // Recarregar o pedido completo com itens após atualizar
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
     }
 
     public async Task DeleteOrderAsync(Guid orderId, CancellationToken cancellationToken = default)
@@ -165,7 +175,9 @@ public class OrderService
         order.Viewed = true;
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
-        return MapToDto(order);
+        // Recarregar o pedido completo com itens após atualizar
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
     }
 
     private static OrderDto MapToDto(Order order)

@@ -35,6 +35,23 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<Order>> GetNonDraftOrdersAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+            .Where(o => o.Draft == false)
+            .ToListAsync(cancellationToken);
+    }
+
+    public override async Task<IEnumerable<Order>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+            .ToListAsync(cancellationToken);
+    }
+
     public override async Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbSet

@@ -106,9 +106,8 @@ public class OrderController : ControllerBase
         }
         else if (draft.HasValue && !draft.Value)
         {
-            // Se draft=false, retornar apenas não-draft (finalizados)
-            var allOrders = await _orderService.GetAllOrdersAsync(cancellationToken);
-            orders = allOrders.Where(o => !o.Draft);
+            // Se draft=false, retornar apenas não-draft (enviados para produção)
+            orders = await _orderService.GetNonDraftOrdersAsync(cancellationToken);
         }
         else
         {
