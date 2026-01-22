@@ -88,6 +88,32 @@ public class ProductController : ControllerBase
         return Ok(products);
     }
 
+    [HttpGet("search")]
+    [Authorize]
+    public async Task<ActionResult<SearchProductsResponseDto>> SearchProducts([FromQuery] string q, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+        {
+            return BadRequest(new { error = "Termo de busca deve ter pelo menos 2 caracteres" });
+        }
+
+        var products = await _productService.SearchProductsAsync(q, cancellationToken);
+        return Ok(new SearchProductsResponseDto
+        {
+            products = products.Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Price = p.Price,
+                Description = p.Description,
+                Disabled = p.Disabled,
+                CategoryId = p.CategoryId,
+                Category = p.Category,
+                CreatedAt = p.CreatedAt
+            }).ToList()
+        });
+    }
+
     [HttpGet("category/{categoryId}")]
     [Authorize]
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsByCategory(Guid categoryId, CancellationToken cancellationToken)
@@ -102,12 +128,59 @@ public class ProductController : ControllerBase
     {
         try
         {
+            Guid productId;
+            if (request.Id != Guid.Empty)
+            {
+                productId = request.Id;
+            }
+            else if (!string.IsNullOrEmpty(request.product_id))
+            {
+                if (!Guid.TryParse(request.product_id, out productId))
+                {
+                    return BadRequest(new { error = "Product ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Product ID é obrigatório" });
+            }
+
+            // Validar se produto existe
+            var existingProduct = await _productService.GetProductByIdAsync(productId, cancellationToken);
+            if (existingProduct == null)
+            {
+                return NotFound(new { error = "Produto não encontrado" });
+            }
+
+            // Validar category_id se fornecido
+            Guid? categoryId = null;
+            if (!string.IsNullOrEmpty(request.category_id))
+            {
+                string categoryIdStr = request.category_id switch
+                {
+                    Guid g => g.ToString(),
+                    string s => s,
+                    System.Text.Json.JsonElement jsonElement => jsonElement.GetString() ?? string.Empty,
+                    _ => request.category_id.ToString() ?? string.Empty
+                };
+
+                if (!string.IsNullOrWhiteSpace(categoryIdStr))
+                {
+                    if (!Guid.TryParse(categoryIdStr, out var parsedCategoryId))
+                    {
+                        return BadRequest(new { error = $"Category ID inválido: '{categoryIdStr}'. Deve ser um GUID válido." });
+                    }
+                    categoryId = parsedCategoryId;
+                }
+            }
+
             var product = await _productService.UpdateProductAsync(
-                request.Id,
+                productId,
                 request.Name,
                 request.Price,
                 request.Description,
                 request.Disabled,
+                categoryId,
                 cancellationToken
             );
             return Ok(product);

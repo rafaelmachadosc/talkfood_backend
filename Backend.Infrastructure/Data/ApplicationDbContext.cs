@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Item> Items { get; set; }
     public DbSet<Cashier> Cashiers { get; set; }
     public DbSet<CashierMovement> CashierMovements { get; set; }
+    public DbSet<OrderPayment> OrderPayments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -92,6 +93,16 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable("cashier_movements");
             entity.HasKey(e => e.Id);
+        });
+
+        modelBuilder.Entity<OrderPayment>(entity =>
+        {
+            entity.ToTable("order_payments");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Order)
+                  .WithMany()
+                  .HasForeignKey(e => e.OrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

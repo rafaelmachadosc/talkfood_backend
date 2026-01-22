@@ -180,6 +180,41 @@ public class OrderService
         return MapToDto(updatedOrder!);
     }
 
+    public async Task<OrderDto> AddMultipleItemsAsync(Guid orderId, List<(Guid productId, int amount)> items, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        if (order == null)
+        {
+            throw new KeyNotFoundException("Pedido não encontrado");
+        }
+
+        if (!order.Draft)
+        {
+            throw new InvalidOperationException("Não é possível adicionar itens a um pedido que já foi enviado para produção");
+        }
+
+        foreach (var (productId, amount) in items)
+        {
+            var product = await _productRepository.GetByIdAsync(productId, cancellationToken);
+            if (product == null)
+            {
+                throw new KeyNotFoundException($"Produto {productId} não encontrado");
+            }
+
+            var item = new Item
+            {
+                OrderId = orderId,
+                ProductId = productId,
+                Amount = amount
+            };
+
+            await _itemRepository.AddAsync(item, cancellationToken);
+        }
+
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
+    }
+
     private static OrderDto MapToDto(Order order)
     {
         return new OrderDto

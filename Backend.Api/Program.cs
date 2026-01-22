@@ -104,6 +104,8 @@ builder.Services.AddScoped<IRepository<Product>, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<ITableRepository, TableRepository>();
 builder.Services.AddScoped<IRepository<Cashier>, CashierRepository>();
+builder.Services.AddScoped<IRepository<CashierMovement>, CashierMovementRepository>();
+builder.Services.AddScoped<IRepository<OrderPayment>, OrderPaymentRepository>();
 builder.Services.AddScoped<IRepository<Item>, ItemRepository>();
 
 // Services
@@ -112,8 +114,10 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<TableService>();
 builder.Services.AddScoped<CashierService>();
+builder.Services.AddScoped<AnalyticsService>();
 
 // Tunnel Strategy Pattern
 builder.Services.AddSingleton<ITunnelConnectionFactory, TunnelConnectionFactory>();

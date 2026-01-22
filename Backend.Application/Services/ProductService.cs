@@ -98,7 +98,59 @@ public class ProductService
         });
     }
 
-    public async Task<ProductDto> UpdateProductAsync(Guid id, string? name, int? price, string? description, bool? disabled, CancellationToken cancellationToken = default)
+    public async Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var product = await _productRepository.GetByIdAsync(id, cancellationToken);
+        if (product == null)
+        {
+            return null;
+        }
+
+        return new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Price = product.Price,
+            Description = product.Description,
+            Disabled = product.Disabled,
+            CategoryId = product.CategoryId,
+            Category = product.Category != null ? new CategoryDto
+            {
+                Id = product.Category.Id,
+                Name = product.Category.Name
+            } : null,
+            CreatedAt = product.CreatedAt
+        };
+    }
+
+    public async Task<IEnumerable<ProductDto>> SearchProductsAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        var allProducts = await _productRepository.GetAllAsync(cancellationToken);
+        var searchLower = searchTerm.ToLower();
+
+        var products = allProducts
+            .Where(p => !p.Disabled && p.Name.ToLower().Contains(searchLower))
+            .OrderBy(p => p.Name)
+            .ToList();
+
+        return products.Select(p => new ProductDto
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Price = p.Price,
+            Description = p.Description,
+            Disabled = p.Disabled,
+            CategoryId = p.CategoryId,
+            Category = p.Category != null ? new CategoryDto
+            {
+                Id = p.Category.Id,
+                Name = p.Category.Name
+            } : null,
+            CreatedAt = p.CreatedAt
+        });
+    }
+
+    public async Task<ProductDto> UpdateProductAsync(Guid id, string? name, int? price, string? description, bool? disabled, Guid? categoryId, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetByIdAsync(id, cancellationToken);
         if (product == null)
@@ -110,6 +162,16 @@ public class ProductService
         if (price.HasValue) product.Price = price.Value;
         if (description != null) product.Description = description;
         if (disabled.HasValue) product.Disabled = disabled.Value;
+
+        if (categoryId.HasValue)
+        {
+            var category = await _categoryRepository.GetByIdAsync(categoryId.Value, cancellationToken);
+            if (category == null)
+            {
+                throw new KeyNotFoundException("Categoria não encontrada");
+            }
+            product.CategoryId = categoryId.Value;
+        }
 
         await _productRepository.UpdateAsync(product, cancellationToken);
 

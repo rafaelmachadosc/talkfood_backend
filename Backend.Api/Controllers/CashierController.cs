@@ -13,10 +13,12 @@ namespace Backend.Api.Controllers;
 public class CashierController : ControllerBase
 {
     private readonly CashierService _cashierService;
+    private readonly OrderPaymentService _paymentService;
 
-    public CashierController(CashierService cashierService)
+    public CashierController(CashierService cashierService, OrderPaymentService paymentService)
     {
         _cashierService = cashierService;
+        _paymentService = paymentService;
     }
 
     [HttpGet("status")]
@@ -86,6 +88,51 @@ public class CashierController : ControllerBase
                 return BadRequest(new { error = "Valor deve ser maior que zero" });
             }
 
+            // Se is_partial = true, usar recebimento parcial
+            if (request.is_partial == true)
+            {
+                var itemIds = new List<Guid>();
+                if (request.item_ids != null)
+                {
+                    foreach (var itemIdStr in request.item_ids)
+                    {
+                        if (Guid.TryParse(itemIdStr, out var itemId))
+                        {
+                            itemIds.Add(itemId);
+                        }
+                    }
+                }
+
+                var partialResult = await _paymentService.ReceivePartialPaymentAsync(
+                    orderId,
+                    itemIds.Any() ? itemIds : null,
+                    request.payment_method ?? "DINHEIRO",
+                    request.received_amount ?? request.amount,
+                    cancellationToken
+                );
+
+                // Registrar no caixa também
+                await _cashierService.ReceivePaymentAsync(
+                    orderId,
+                    request.amount,
+                    request.payment_method ?? "DINHEIRO",
+                    request.received_amount,
+                    cancellationToken
+                );
+
+                return Ok(new ReceivePaymentResponseDto
+                {
+                    id = Guid.NewGuid().ToString(),
+                    order_id = request.order_id,
+                    amount = request.amount,
+                    payment_method = request.payment_method ?? "DINHEIRO",
+                    received_amount = request.received_amount ?? request.amount,
+                    change = (request.received_amount ?? request.amount) - request.amount,
+                    createdAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                });
+            }
+
+            // Recebimento completo (comportamento original)
             if (request.received_amount.HasValue && request.received_amount.Value < request.amount)
             {
                 return BadRequest(new { error = "Valor recebido não pode ser menor que o valor total" });
@@ -129,11 +176,15 @@ public class ReceivePaymentRequestDto
 {
     [System.Text.Json.Serialization.JsonPropertyName("order_id")]
     public string? order_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("item_ids")]
+    public List<string>? item_ids { get; set; }
     public int amount { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("payment_method")]
     public string? payment_method { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("received_amount")]
     public int? received_amount { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("is_partial")]
+    public bool? is_partial { get; set; }
 }
 
 public class ReceivePaymentResponseDto

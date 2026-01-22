@@ -14,10 +14,12 @@ namespace Backend.Api.Controllers;
 public class OrderController : ControllerBase
 {
     private readonly OrderService _orderService;
+    private readonly OrderPaymentService _paymentService;
 
-    public OrderController(OrderService orderService)
+    public OrderController(OrderService orderService, OrderPaymentService paymentService)
     {
         _orderService = orderService;
+        _paymentService = paymentService;
     }
 
     [HttpPost]
@@ -406,6 +408,131 @@ public class OrderController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("receive-partial")]
+    public async Task<ActionResult<ReceivePartialPaymentResponseDto>> ReceivePartialPayment([FromBody] ReceivePartialPaymentRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.order_id))
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            if (!Guid.TryParse(request.order_id, out var orderId))
+            {
+                return BadRequest(new { error = "Order ID inválido" });
+            }
+
+            if (string.IsNullOrEmpty(request.payment_method))
+            {
+                return BadRequest(new { error = "Payment method é obrigatório" });
+            }
+
+            if (!request.received_amount.HasValue || request.received_amount.Value <= 0)
+            {
+                return BadRequest(new { error = "Received amount deve ser maior que zero" });
+            }
+
+            var itemIds = new List<Guid>();
+            if (request.item_ids != null)
+            {
+                foreach (var itemIdStr in request.item_ids)
+                {
+                    if (Guid.TryParse(itemIdStr, out var itemId))
+                    {
+                        itemIds.Add(itemId);
+                    }
+                }
+            }
+
+            var result = await _paymentService.ReceivePartialPaymentAsync(
+                orderId,
+                itemIds.Any() ? itemIds : null,
+                request.payment_method,
+                request.received_amount.Value,
+                cancellationToken
+            );
+
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{orderId}/payments")]
+    public async Task<ActionResult<OrderPaymentsResponseDto>> GetOrderPayments(Guid orderId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var payments = await _paymentService.GetOrderPaymentsAsync(orderId, cancellationToken);
+            return Ok(payments);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("add-items")]
+    public async Task<ActionResult<OrderDto>> AddMultipleItems([FromBody] AddItemsRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.order_id))
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            if (!Guid.TryParse(request.order_id, out var orderId))
+            {
+                return BadRequest(new { error = "Order ID inválido" });
+            }
+
+            if (request.items == null || !request.items.Any())
+            {
+                return BadRequest(new { error = "Pelo menos um item é obrigatório" });
+            }
+
+            var items = new List<(Guid productId, int amount)>();
+            foreach (var item in request.items)
+            {
+                if (string.IsNullOrEmpty(item.product_id))
+                {
+                    return BadRequest(new { error = "Product ID é obrigatório para todos os itens" });
+                }
+
+                if (!Guid.TryParse(item.product_id, out var productId))
+                {
+                    return BadRequest(new { error = $"Product ID inválido: {item.product_id}" });
+                }
+
+                if (item.amount <= 0)
+                {
+                    return BadRequest(new { error = "Amount deve ser maior que zero" });
+                }
+
+                items.Add((productId, item.amount));
+            }
+
+            var order = await _orderService.AddMultipleItemsAsync(orderId, items, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 }

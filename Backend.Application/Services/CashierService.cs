@@ -142,6 +142,7 @@ public class CashierService
         {
             Type = "SALE",
             Amount = amount,
+            PaymentMethod = paymentMethod, // Salvar método de pagamento
             Observation = $"Pagamento do pedido {orderId} - Método: {paymentMethod}" + (change > 0 ? $" - Troco: {change}" : ""),
             CashierId = activeCashier.Id
         };
