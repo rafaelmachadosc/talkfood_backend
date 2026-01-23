@@ -11,10 +11,12 @@ namespace Backend.Api.Controllers;
 public class CategoryController : ControllerBase
 {
     private readonly CategoryService _categoryService;
+    private readonly ILogger<CategoryController> _logger;
 
-    public CategoryController(CategoryService categoryService)
+    public CategoryController(CategoryService categoryService, ILogger<CategoryController> logger)
     {
         _categoryService = categoryService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -43,12 +45,15 @@ public class CategoryController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("GET /api/category - Iniciando busca de categorias");
             var categories = await _categoryService.GetAllCategoriesAsync(cancellationToken);
-            return Ok(categories);
+            _logger.LogInformation($"GET /api/category - Encontradas {categories?.Count() ?? 0} categorias");
+            return Ok(categories ?? new List<CategoryDto>());
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message, details = ex.ToString() });
+            _logger.LogError(ex, "GET /api/category - Erro ao buscar categorias");
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 

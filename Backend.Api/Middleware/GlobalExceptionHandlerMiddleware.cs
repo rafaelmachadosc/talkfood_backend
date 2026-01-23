@@ -61,14 +61,19 @@ public class GlobalExceptionHandlerMiddleware
                 : null
         };
 
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)code;
-
-        var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+        if (!context.Response.HasStarted)
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)code;
 
-        return context.Response.WriteAsync(json);
+            var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            return context.Response.WriteAsync(json);
+        }
+
+        return Task.CompletedTask;
     }
 }
