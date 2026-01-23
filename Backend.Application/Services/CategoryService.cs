@@ -15,9 +15,14 @@ public class CategoryService
 
     public async Task<CategoryDto> CreateCategoryAsync(string name, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Nome da categoria não pode ser vazio", nameof(name));
+        }
+
         var category = new Category
         {
-            Name = name
+            Name = name.Trim()
         };
 
         var createdCategory = await _categoryRepository.AddAsync(category, cancellationToken);

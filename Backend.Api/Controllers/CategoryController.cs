@@ -23,12 +23,17 @@ public class CategoryController : ControllerBase
     {
         try
         {
-            var category = await _categoryService.CreateCategoryAsync(request.Name, cancellationToken);
+            if (request == null || string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(new { error = "Nome da categoria é obrigatório" });
+            }
+
+            var category = await _categoryService.CreateCategoryAsync(request.Name.Trim(), cancellationToken);
             return Ok(category);
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return StatusCode(500, new { error = ex.Message, details = ex.ToString() });
         }
     }
 
@@ -36,19 +41,35 @@ public class CategoryController : ControllerBase
     [Authorize]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAllCategories(CancellationToken cancellationToken)
     {
-        var categories = await _categoryService.GetAllCategoriesAsync(cancellationToken);
-        return Ok(categories);
+        try
+        {
+            var categories = await _categoryService.GetAllCategoriesAsync(cancellationToken);
+            return Ok(categories);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, details = ex.ToString() });
+        }
     }
 
     [HttpGet("public")]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAllCategoriesPublic(CancellationToken cancellationToken)
     {
-        var categories = await _categoryService.GetAllCategoriesAsync(cancellationToken);
-        return Ok(categories);
+        try
+        {
+            var categories = await _categoryService.GetAllCategoriesAsync(cancellationToken);
+            return Ok(categories);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, details = ex.ToString() });
+        }
     }
 }
 
 public class CreateCategoryRequestDto
 {
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 }

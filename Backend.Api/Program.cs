@@ -59,7 +59,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("https://talkfoodfrontend-production.up.railway.app", "http://localhost:3000")
               .AllowAnyMethod()
-              .AllowAnyHeader()
+              .WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With")
               .AllowCredentials();
     });
 });
@@ -131,6 +131,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRouting();
 
 app.UseCors("AllowAll");
 
