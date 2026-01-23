@@ -37,13 +37,20 @@ public class CategoryService
 
     public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync(CancellationToken cancellationToken = default)
     {
-        var categories = await _categoryRepository.GetAllAsync(cancellationToken);
-
-        return categories.Select(c => new CategoryDto
+        try
         {
-            Id = c.Id,
-            Name = c.Name,
-            CreatedAt = c.CreatedAt
-        });
+            var categories = await _categoryRepository.GetAllAsync(cancellationToken);
+
+            return categories.Select(c => new CategoryDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                CreatedAt = c.CreatedAt
+            });
+        }
+        catch (Exception)
+        {
+            return new List<CategoryDto>();
+        }
     }
 }

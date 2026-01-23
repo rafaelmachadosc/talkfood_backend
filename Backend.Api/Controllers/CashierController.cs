@@ -24,8 +24,15 @@ public class CashierController : ControllerBase
     [HttpGet("status")]
     public async Task<ActionResult<CashierDto>> GetCashierStatus(CancellationToken cancellationToken)
     {
-        var status = await _cashierService.GetCashierStatusAsync(cancellationToken);
-        return Ok(status);
+        try
+        {
+            var status = await _cashierService.GetCashierStatusAsync(cancellationToken);
+            return Ok(status);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     [HttpPost("open")]

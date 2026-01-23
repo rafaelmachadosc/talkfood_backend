@@ -20,7 +20,14 @@ public class AnalyticsController : ControllerBase
     [HttpGet("metrics")]
     public async Task<ActionResult<MetricsDto>> GetMetrics(CancellationToken cancellationToken)
     {
-        var metrics = await _analyticsService.GetMetricsAsync(cancellationToken);
-        return Ok(metrics);
+        try
+        {
+            var metrics = await _analyticsService.GetMetricsAsync(cancellationToken);
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 }

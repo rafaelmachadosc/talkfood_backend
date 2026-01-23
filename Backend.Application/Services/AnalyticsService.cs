@@ -52,13 +52,20 @@ public class AnalyticsService
         int averageTicket = 0;
         if (ordersToday.Any())
         {
-            var totalTicket = ordersToday.Sum(o =>
-                o.Items.Where(i => i.Product != null)
-                       .Sum(i => i.Product.Price * i.Amount));
-
-            if (totalTicket > 0)
+            try
             {
-                averageTicket = totalTicket / ordersToday.Count;
+                var totalTicket = ordersToday.Sum(o =>
+                    o.Items?.Where(i => i.Product != null)
+                           .Sum(i => i.Product.Price * i.Amount) ?? 0);
+
+                if (totalTicket > 0)
+                {
+                    averageTicket = totalTicket / ordersToday.Count;
+                }
+            }
+            catch
+            {
+                averageTicket = 0;
             }
         }
 
