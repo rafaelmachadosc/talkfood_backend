@@ -7,6 +7,7 @@ namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/category")]
 public class CategoryController : ControllerBase
 {
     private readonly CategoryService _categoryService;
