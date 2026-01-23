@@ -27,8 +27,11 @@ public class GlobalExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "=== Global Error Handler ===");
-            await HandleExceptionAsync(context, ex);
+            if (!context.Response.HasStarted)
+            {
+                _logger.LogError(ex, "=== Global Error Handler ===");
+                await HandleExceptionAsync(context, ex);
+            }
         }
     }
 
