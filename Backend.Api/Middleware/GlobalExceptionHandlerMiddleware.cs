@@ -35,7 +35,7 @@ public class GlobalExceptionHandlerMiddleware
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         var code = HttpStatusCode.InternalServerError;
         var message = "Internal server error!";
@@ -74,9 +74,7 @@ public class GlobalExceptionHandlerMiddleware
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            return context.Response.WriteAsync(json);
+            await context.Response.WriteAsync(json);
         }
-
-        return Task.CompletedTask;
     }
 }
