@@ -37,13 +37,11 @@ public class OrderPaymentService
         int orderTotal;
         if (itemIds != null && itemIds.Any())
         {
-            // Calcular total apenas dos itens especificados
             var items = order.Items.Where(i => itemIds.Contains(i.Id)).ToList();
             orderTotal = items.Sum(i => i.Product.Price * i.Amount);
         }
         else
         {
-            // Calcular total de todos os itens
             orderTotal = order.Items.Sum(i => i.Product.Price * i.Amount);
         }
 
@@ -51,7 +49,6 @@ public class OrderPaymentService
         var existingPayments = await _paymentRepository.FindAsync(p => p.OrderId == orderId, cancellationToken);
         var totalReceived = existingPayments.Sum(p => p.Amount);
 
-        // Criar novo pagamento
         var payment = new OrderPayment
         {
             OrderId = orderId,
@@ -59,36 +56,21 @@ public class OrderPaymentService
             Amount = receivedAmount,
             ReceivedAmount = receivedAmount,
             IsPartial = true,
-            ItemIdsJson = itemIds != null && itemIds.Any() 
-                ? System.Text.Json.JsonSerializer.Serialize(itemIds) 
+            ItemIdsJson = itemIds != null && itemIds.Any()
+                ? System.Text.Json.JsonSerializer.Serialize(itemIds)
                 : null
         };
 
         await _paymentRepository.AddAsync(payment, cancellationToken);
 
-        if (itemIds != null && itemIds.Any())
-        {
-            foreach (var itemId in itemIds)
-            {
-                var item = await _itemRepository.GetByIdAsync(itemId, cancellationToken);
-                if (item != null && item.OrderId == orderId)
-                {
-                    item.IsPaid = true;
-                    await _itemRepository.UpdateAsync(item, cancellationToken);
-                }
-            }
-        }
-
-        var unpaidItems = order.Items.Where(i => !i.IsPaid).ToList();
-        var remainingAmount = unpaidItems.Sum(i => i.Product.Price * i.Amount);
+        totalReceived += receivedAmount;
+        var remainingAmount = orderTotal - totalReceived;
 
         if (remainingAmount <= 0)
         {
             order.Status = true;
             await _orderRepository.UpdateAsync(order, cancellationToken);
         }
-
-        totalReceived += receivedAmount;
 
         return new ReceivePartialPaymentResponseDto
         {
@@ -107,10 +89,9 @@ public class OrderPaymentService
         }
 
         var payments = await _paymentRepository.FindAsync(p => p.OrderId == orderId, cancellationToken);
-        var unpaidItems = order.Items.Where(i => !i.IsPaid).ToList();
         var orderTotal = order.Items.Sum(i => i.Product.Price * i.Amount);
         var totalReceived = payments.Sum(p => p.Amount);
-        var remainingAmount = unpaidItems.Sum(i => i.Product.Price * i.Amount);
+        var remainingAmount = orderTotal - totalReceived;
 
         return new OrderPaymentsResponseDto
         {

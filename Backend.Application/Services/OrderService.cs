@@ -175,7 +175,6 @@ public class OrderService
         order.Viewed = true;
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
-        // Recarregar o pedido completo com itens após atualizar
         var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
         return MapToDto(updatedOrder!);
     }
@@ -227,9 +226,9 @@ public class OrderService
             Name = order.Name,
             Phone = order.Phone,
             OrderType = order.OrderType,
-            orderType = order.OrderType == OrderType.Mesa ? "MESA" : "BALCAO", // Converter para string
+            orderType = order.OrderType == OrderType.Mesa ? "MESA" : "BALCAO",
             Viewed = order.Viewed,
-            Items = order.Items.Where(i => !i.IsPaid).Select(i => new ItemDto
+            Items = order.Items.Select(i => new ItemDto
             {
                 Id = i.Id,
                 Amount = i.Amount,

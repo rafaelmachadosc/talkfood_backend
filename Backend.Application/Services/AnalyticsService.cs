@@ -49,7 +49,18 @@ public class AnalyticsService
         var totalMonth = paymentsMonth.Sum(p => p.Amount);
 
         // Calcular média de ticket
-        var averageTicket = ordersToday.Any() ? ordersToday.Sum(o => o.Items.Sum(i => i.Product.Price * i.Amount)) / ordersToday.Count : 0;
+        int averageTicket = 0;
+        if (ordersToday.Any())
+        {
+            var totalTicket = ordersToday.Sum(o =>
+                o.Items.Where(i => i.Product != null)
+                       .Sum(i => i.Product.Price * i.Amount));
+
+            if (totalTicket > 0)
+            {
+                averageTicket = totalTicket / ordersToday.Count;
+            }
+        }
 
         // Calcular taxa de crescimento (comparar com semana anterior)
         var lastWeekStart = weekStart.AddDays(-7);
