@@ -241,8 +241,17 @@ public class CreateProductRequestDto
 public class UpdateProductRequestDto
 {
     public Guid Id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("product_id")]
+    public string? product_id { get; set; }
     public string? Name { get; set; }
     public int? Price { get; set; }
     public string? Description { get; set; }
     public bool? Disabled { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("category_id")]
+    public object? category_id { get; set; }
+}
+
+public class SearchProductsResponseDto
+{
+    public List<ProductDto> products { get; set; } = new();
 }
