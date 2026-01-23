@@ -150,7 +150,7 @@ public class ProductService
         });
     }
 
-    public async Task<ProductDto> UpdateProductAsync(Guid id, string? name, int? price, string? description, bool? disabled, Guid? categoryId, CancellationToken cancellationToken = default)
+    public async Task<ProductDto> UpdateProductAsync(Guid id, string? name, int? price, string? description, bool? disabled, Guid categoryId, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetByIdAsync(id, cancellationToken);
         if (product == null)
@@ -163,14 +163,14 @@ public class ProductService
         if (description != null) product.Description = description;
         if (disabled.HasValue) product.Disabled = disabled.Value;
 
-        if (categoryId.HasValue)
+        if (categoryId != Guid.Empty)
         {
-            var category = await _categoryRepository.GetByIdAsync(categoryId.Value, cancellationToken);
+            var category = await _categoryRepository.GetByIdAsync(categoryId, cancellationToken);
             if (category == null)
             {
                 throw new KeyNotFoundException("Categoria não encontrada");
             }
-            product.CategoryId = categoryId.Value;
+            product.CategoryId = categoryId;
         }
 
         await _productRepository.UpdateAsync(product, cancellationToken);

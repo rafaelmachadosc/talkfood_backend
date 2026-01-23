@@ -154,7 +154,7 @@ public class ProductController : ControllerBase
 
             // Validar category_id se fornecido
             Guid? categoryId = null;
-            if (!string.IsNullOrEmpty(request.category_id))
+            if (request.category_id != null)
             {
                 string categoryIdStr = request.category_id switch
                 {
@@ -180,7 +180,7 @@ public class ProductController : ControllerBase
                 request.Price,
                 request.Description,
                 request.Disabled,
-                categoryId,
+                categoryId ?? Guid.Empty,
                 cancellationToken
             );
             return Ok(product);
