@@ -28,7 +28,7 @@ public class OrderController : ControllerBase
         try
         {
             // Converter string "MESA"/"BALCAO" para enum (aceita orderType em camelCase do frontend)
-            OrderType orderType = request.OrderType ?? OrderType.Mesa;
+            OrderType orderType = OrderType.Mesa;
             
             if (!string.IsNullOrEmpty(request.orderType))
             {
@@ -38,10 +38,17 @@ public class OrderController : ControllerBase
                     orderType = OrderType.Balcao;
             }
 
-            // Validação: MESA precisa de table, BALCAO precisa de name
-            if (orderType == OrderType.Mesa && !request.Table.HasValue)
+            // Validação: MESA precisa de table e CommandNumber
+            if (orderType == OrderType.Mesa)
             {
-                return BadRequest(new { error = "Número da mesa é obrigatório para pedidos de mesa" });
+                if (!request.Table.HasValue)
+                {
+                    return BadRequest(new { error = "Table obrigatório" });
+                }
+                if (string.IsNullOrWhiteSpace(request.CommandNumber))
+                {
+                    return BadRequest(new { error = "CommandNumber obrigatório" });
+                }
             }
             
             if (orderType == OrderType.Balcao && string.IsNullOrWhiteSpace(request.Name))
@@ -72,13 +79,20 @@ public class OrderController : ControllerBase
         try
         {
             // Converter string "MESA"/"BALCAO" para enum (aceita orderType em camelCase do frontend)
-            OrderType orderType = request.OrderType ?? OrderType.Mesa;
+            OrderType orderType = OrderType.Mesa;
             
             if (!string.IsNullOrEmpty(request.orderType))
             {
                 if (request.orderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Mesa;
                 else if (request.orderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Balcao;
+            }
+            else if (!string.IsNullOrEmpty(request.OrderType))
+            {
+                if (request.OrderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Mesa;
+                else if (request.OrderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
 
@@ -301,6 +315,7 @@ public class OrderController : ControllerBase
         }
     }
 
+    [HttpPut("update")]
     [HttpPut("{id}")]
     [HttpPut] // Suporta também /api/order com order_id no body
     public async Task<ActionResult<OrderDto>> UpdateOrder(Guid? id, [FromBody] UpdateOrderRequestDto? request, CancellationToken cancellationToken)
@@ -324,34 +339,27 @@ public class OrderController : ControllerBase
                 return BadRequest(new { error = "Order ID é obrigatório" });
             }
 
-            int? commandNumber = null;
+            string? commandNumber = null;
             if (request?.commandNumber != null)
             {
-                if (request.commandNumber is int i)
+                if (request.commandNumber is string strValue)
                 {
-                    commandNumber = i;
-                }
-                else if (request.commandNumber is string strValue && !string.IsNullOrWhiteSpace(strValue))
-                {
-                    if (int.TryParse(strValue, out var parsed))
-                    {
-                        commandNumber = parsed;
-                    }
+                    commandNumber = strValue.Trim();
                 }
                 else if (request.commandNumber is System.Text.Json.JsonElement jsonElement)
                 {
-                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
-                        commandNumber = jsonElement.GetInt32();
+                        commandNumber = jsonElement.GetString()?.Trim();
                     }
-                    else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                    else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Number)
                     {
-                        var strValue2 = jsonElement.GetString();
-                        if (!string.IsNullOrWhiteSpace(strValue2) && int.TryParse(strValue2, out var parsed))
-                        {
-                            commandNumber = parsed;
-                        }
+                        commandNumber = jsonElement.GetInt32().ToString();
                     }
+                }
+                else
+                {
+                    commandNumber = request.commandNumber.ToString()?.Trim();
                 }
             }
 
@@ -365,7 +373,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("by-command-or-name")]
-    public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrdersByCommandOrName([FromQuery] int? commandNumber, [FromQuery] string? name, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrdersByCommandOrName([FromQuery] string? commandNumber, [FromQuery] string? name, CancellationToken cancellationToken)
     {
         var orders = await _orderService.GetOrdersByCommandOrNameAsync(commandNumber, name, cancellationToken);
         return Ok(orders);
@@ -681,29 +689,31 @@ public class UpdateCommandNumberRequestDto
     [System.Text.Json.Serialization.JsonPropertyName("order_id")]
     public string? order_id { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
-    public int? commandNumber { get; set; }
+    public string? commandNumber { get; set; }
 }
 
 public class UpdateOrderRequestDto
 {
+    [System.Text.Json.Serialization.JsonPropertyName("Order_Id")]
+    public Guid? Order_Id { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("order_id")]
     public string? order_id { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string? name { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
-    public object? commandNumber { get; set; } // Pode ser int, string ou null
+    public object? commandNumber { get; set; } // Pode ser string ou null
 }
 
 public class CreateOrderRequestDto
 {
+    [System.Text.Json.Serialization.JsonPropertyName("OrderType")]
+    public string? OrderType { get; set; } = "";
+    public string? orderType { get; set; } // camelCase do frontend - aceita "MESA" ou "BALCAO"
     public int? Table { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
+    public string? CommandNumber { get; set; }
     public string? Name { get; set; }
     public string? Phone { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
-    public int? CommandNumber { get; set; } // Número da comanda
-    [System.Text.Json.Serialization.JsonIgnore]
-    public OrderType? OrderType { get; set; } // Ignorado no JSON, usado apenas internamente
-    public string? orderType { get; set; } // camelCase do frontend - aceita "MESA" ou "BALCAO"
-    [System.Text.Json.Serialization.JsonIgnore]
-    public object? items { get; set; } // Ignorado - frontend envia array vazio, mas não é usado
+    [System.Text.Json.Serialization.JsonPropertyName("Items")]
+    public List<object> Items { get; set; } = new();
 }

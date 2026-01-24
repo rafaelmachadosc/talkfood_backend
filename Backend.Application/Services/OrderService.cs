@@ -24,7 +24,7 @@ public class OrderService
         _itemRepository = itemRepository;
     }
 
-    public async Task<OrderDto> CreateOrderAsync(int? table, string? name, string? phone, int? commandNumber, OrderType orderType, CancellationToken cancellationToken = default)
+    public async Task<OrderDto> CreateOrderAsync(int? table, string? name, string? phone, string? commandNumber, OrderType orderType, CancellationToken cancellationToken = default)
     {
         Guid? tableId = null;
         if (table.HasValue)
@@ -39,7 +39,7 @@ public class OrderService
             TableId = tableId,
             Name = name,
             Phone = phone,
-            CommandNumber = commandNumber,
+            CommandNumber = commandNumber?.Trim(),
             OrderType = orderType,
             Draft = true,
             Status = false
@@ -215,7 +215,7 @@ public class OrderService
         return MapToDto(updatedOrder!);
     }
 
-    public async Task<OrderDto> UpdateCommandNumberAsync(Guid orderId, int? commandNumber, CancellationToken cancellationToken = default)
+    public async Task<OrderDto> UpdateCommandNumberAsync(Guid orderId, string? commandNumber, CancellationToken cancellationToken = default)
     {
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
         if (order == null)
@@ -223,14 +223,14 @@ public class OrderService
             throw new KeyNotFoundException("Pedido não encontrado");
         }
 
-        order.CommandNumber = commandNumber;
+        order.CommandNumber = commandNumber?.Trim();
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
         var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
         return MapToDto(updatedOrder!);
     }
 
-    public async Task<OrderDto> UpdateOrderInfoAsync(Guid orderId, string? name, int? commandNumber, CancellationToken cancellationToken = default)
+    public async Task<OrderDto> UpdateOrderInfoAsync(Guid orderId, string? name, string? commandNumber, CancellationToken cancellationToken = default)
     {
         var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
         if (order == null)
@@ -247,13 +247,12 @@ public class OrderService
             order.Name = null;
         }
         
-        if (commandNumber.HasValue) 
+        if (commandNumber != null)
         {
-            order.CommandNumber = commandNumber.Value;
+            order.CommandNumber = commandNumber.Trim();
         }
         else if (commandNumber == null && name == null)
         {
-            // Se ambos são null, não fazer nada ou resetar
             order.CommandNumber = null;
         }
 
@@ -263,13 +262,13 @@ public class OrderService
         return MapToDto(updatedOrder!);
     }
 
-    public async Task<IEnumerable<OrderDto>> GetOrdersByCommandOrNameAsync(int? commandNumber, string? name, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OrderDto>> GetOrdersByCommandOrNameAsync(string? commandNumber, string? name, CancellationToken cancellationToken = default)
     {
         var allOrders = await _orderRepository.GetAllAsync(cancellationToken);
         
-        if (commandNumber.HasValue)
+        if (!string.IsNullOrWhiteSpace(commandNumber))
         {
-            allOrders = allOrders.Where(o => o.CommandNumber == commandNumber.Value);
+            allOrders = allOrders.Where(o => o.CommandNumber == commandNumber.Trim());
         }
         
         if (!string.IsNullOrWhiteSpace(name))
@@ -278,6 +277,19 @@ public class OrderService
         }
 
         return allOrders.Select(MapToDto);
+    }
+
+    public async Task<IEnumerable<OrderDto>> GetOrdersByTableAndCommandAsync(int table, string commandNumber, CancellationToken cancellationToken = default)
+    {
+        var orders = await _orderRepository.GetByTableAsync(table, null, cancellationToken);
+        
+        var filteredOrders = orders
+            .Where(o => o.CommandNumber == commandNumber.Trim() 
+                && o.Draft == true 
+                && o.Status == false)
+            .ToList();
+
+        return filteredOrders.Select(MapToDto);
     }
 
     private static OrderDto MapToDto(Order order)

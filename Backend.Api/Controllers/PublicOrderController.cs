@@ -25,7 +25,7 @@ public class PublicOrderController : ControllerBase
         try
         {
             // Converter string "MESA"/"BALCAO" para enum
-            OrderType orderType = request.OrderType ?? OrderType.Mesa;
+            OrderType orderType = OrderType.Mesa;
             
             if (!string.IsNullOrEmpty(request.orderType))
             {
@@ -34,15 +34,22 @@ public class PublicOrderController : ControllerBase
                 else if (request.orderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
+            else if (!string.IsNullOrEmpty(request.OrderType))
+            {
+                if (request.OrderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Mesa;
+                else if (request.OrderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
+                    orderType = OrderType.Balcao;
+            }
 
-                   var order = await _orderService.CreateOrderAsync(
-                       request.Table,
-                       request.Name,
-                       request.Phone,
-                       request.CommandNumber,
-                       orderType,
-                       cancellationToken
-                   );
+            var order = await _orderService.CreateOrderAsync(
+                request.Table,
+                request.Name,
+                request.Phone,
+                request.CommandNumber,
+                orderType,
+                cancellationToken
+            );
             return CreatedAtAction(nameof(GetOrderDetail), new { order_id = order.Id }, order);
         }
         catch (Exception ex)
@@ -199,34 +206,27 @@ public class PublicOrderController : ControllerBase
                 return BadRequest(new { error = "Order ID é obrigatório" });
             }
 
-            int? commandNumber = null;
+            string? commandNumber = null;
             if (request?.commandNumber != null)
             {
-                if (request.commandNumber is int i)
+                if (request.commandNumber is string strValue)
                 {
-                    commandNumber = i;
-                }
-                else if (request.commandNumber is string strValue && !string.IsNullOrWhiteSpace(strValue))
-                {
-                    if (int.TryParse(strValue, out var parsed))
-                    {
-                        commandNumber = parsed;
-                    }
+                    commandNumber = strValue.Trim();
                 }
                 else if (request.commandNumber is System.Text.Json.JsonElement jsonElement)
                 {
-                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
-                        commandNumber = jsonElement.GetInt32();
+                        commandNumber = jsonElement.GetString()?.Trim();
                     }
-                    else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                    else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Number)
                     {
-                        var strValue2 = jsonElement.GetString();
-                        if (!string.IsNullOrWhiteSpace(strValue2) && int.TryParse(strValue2, out var parsed))
-                        {
-                            commandNumber = parsed;
-                        }
+                        commandNumber = jsonElement.GetInt32().ToString();
                     }
+                }
+                else
+                {
+                    commandNumber = request.commandNumber.ToString()?.Trim();
                 }
             }
 

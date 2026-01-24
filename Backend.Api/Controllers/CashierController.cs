@@ -14,11 +14,13 @@ public class CashierController : ControllerBase
 {
     private readonly CashierService _cashierService;
     private readonly OrderPaymentService _paymentService;
+    private readonly OrderService _orderService;
 
-    public CashierController(CashierService cashierService, OrderPaymentService paymentService)
+    public CashierController(CashierService cashierService, OrderPaymentService paymentService, OrderService orderService)
     {
         _cashierService = cashierService;
         _paymentService = paymentService;
+        _orderService = orderService;
     }
 
     [HttpGet("status")]
@@ -72,6 +74,53 @@ public class CashierController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message, details = ex.ToString() });
+        }
+    }
+
+    [HttpPost("receive-comanda")]
+    public async Task<ActionResult> ReceiveComanda([FromBody] ReceiveComandaRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (request.Table <= 0 || string.IsNullOrWhiteSpace(request.CommandNumber))
+            {
+                return BadRequest(new { error = "Table e CommandNumber obrigatórios" });
+            }
+
+            var orders = await _orderService.GetOrdersByTableAndCommandAsync(
+                request.Table,
+                request.CommandNumber.Trim(),
+                cancellationToken
+            );
+
+            if (!orders.Any())
+            {
+                return NotFound(new { error = "Nenhum pedido encontrado" });
+            }
+
+            var total = orders.Sum(o => o.Items.Sum(i => (i.Product?.Price ?? 0) * i.Amount));
+
+            // Registrar pagamento para cada pedido
+            foreach (var order in orders)
+            {
+                await _cashierService.ReceivePaymentAsync(
+                    order.Id,
+                    total,
+                    request.Payment_Method ?? "DINHEIRO",
+                    request.Received_Amount,
+                    cancellationToken
+                );
+
+                // Finalizar pedidos
+                await _orderService.FinishOrderAsync(order.Id, cancellationToken);
+                await _orderService.SendOrderAsync(order.Id, cancellationToken);
+            }
+
+            return Ok(new { message = "Comanda recebida com sucesso", total });
         }
         catch (Exception ex)
         {
@@ -211,4 +260,15 @@ public class ReceivePaymentResponseDto
     public int change { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("createdAt")]
     public string createdAt { get; set; } = string.Empty;
+}
+
+public class ReceiveComandaRequestDto
+{
+    public int Table { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("CommandNumber")]
+    public string CommandNumber { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("Payment_Method")]
+    public string Payment_Method { get; set; } = "DINHEIRO";
+    [System.Text.Json.Serialization.JsonPropertyName("Received_Amount")]
+    public int? Received_Amount { get; set; } // centavos
 }
