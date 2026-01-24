@@ -35,13 +35,14 @@ public class PublicOrderController : ControllerBase
                     orderType = OrderType.Balcao;
             }
 
-            var order = await _orderService.CreateOrderAsync(
-                request.Table,
-                request.Name,
-                request.Phone,
-                orderType,
-                cancellationToken
-            );
+                   var order = await _orderService.CreateOrderAsync(
+                       request.Table,
+                       request.Name,
+                       request.Phone,
+                       request.CommandNumber,
+                       orderType,
+                       cancellationToken
+                   );
             return CreatedAtAction(nameof(GetOrderDetail), new { order_id = order.Id }, order);
         }
         catch (Exception ex)

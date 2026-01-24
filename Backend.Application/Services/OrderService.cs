@@ -230,6 +230,23 @@ public class OrderService
         return MapToDto(updatedOrder!);
     }
 
+    public async Task<OrderDto> UpdateOrderInfoAsync(Guid orderId, string? name, int? commandNumber, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        if (order == null)
+        {
+            throw new KeyNotFoundException("Pedido não encontrado");
+        }
+
+        if (name != null) order.Name = name;
+        if (commandNumber.HasValue) order.CommandNumber = commandNumber;
+
+        await _orderRepository.UpdateAsync(order, cancellationToken);
+
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
+    }
+
     public async Task<IEnumerable<OrderDto>> GetOrdersByCommandOrNameAsync(int? commandNumber, string? name, CancellationToken cancellationToken = default)
     {
         var allOrders = await _orderRepository.GetAllAsync(cancellationToken);

@@ -301,6 +301,38 @@ public class OrderController : ControllerBase
         }
     }
 
+    [HttpPut("{id}")]
+    [HttpPut] // Suporta também /api/order com order_id no body
+    public async Task<ActionResult<OrderDto>> UpdateOrder(Guid? id, [FromBody] UpdateOrderRequestDto? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (request != null && !string.IsNullOrEmpty(request.order_id))
+            {
+                if (!Guid.TryParse(request.order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            var order = await _orderService.UpdateOrderInfoAsync(orderId, request?.name, request?.commandNumber, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
     [HttpGet("by-command-or-name")]
     public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrdersByCommandOrName([FromQuery] int? commandNumber, [FromQuery] string? name, CancellationToken cancellationToken)
     {
@@ -617,6 +649,16 @@ public class UpdateCommandNumberRequestDto
 {
     [System.Text.Json.Serialization.JsonPropertyName("order_id")]
     public string? order_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
+    public int? commandNumber { get; set; }
+}
+
+public class UpdateOrderRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string? name { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
     public int? commandNumber { get; set; }
 }
