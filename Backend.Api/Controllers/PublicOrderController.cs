@@ -239,25 +239,3 @@ public class PublicOrderController : ControllerBase
         }
     }
 }
-
-public class UpdateOrderRequestDto
-{
-    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
-    public string? order_id { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("name")]
-    public string? name { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
-    public object? commandNumber { get; set; } // Pode ser int, string ou null
-}
-
-public class CreateOrderRequestDto
-{
-    public int? Table { get; set; }
-    public string? Name { get; set; }
-    public string? Phone { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
-    public int? CommandNumber { get; set; }
-    [System.Text.Json.Serialization.JsonIgnore]
-    public OrderType? OrderType { get; set; }
-    public string? orderType { get; set; }
-}
