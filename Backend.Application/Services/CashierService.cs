@@ -107,17 +107,20 @@ public class CashierService
         activeCashier.Movements.Add(movement);
         await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
 
+        // Recarregar o caixa após atualizar
+        var updatedCashier = await _cashierRepository.GetByIdAsync(activeCashier.Id, cancellationToken);
+
         return new CashierDto
         {
-            Id = activeCashier.Id,
-            IsOpen = activeCashier.IsOpen,
-            OpenedAt = activeCashier.OpenedAt,
-            ClosedAt = activeCashier.ClosedAt,
-            OpenedBy = activeCashier.OpenedBy,
-            InitialAmount = activeCashier.InitialAmount,
-            CurrentAmount = activeCashier.CurrentAmount,
-            TotalSales = activeCashier.TotalSales,
-            TotalOrders = activeCashier.TotalOrders
+            Id = updatedCashier!.Id,
+            IsOpen = updatedCashier.IsOpen,
+            OpenedAt = updatedCashier.OpenedAt,
+            ClosedAt = updatedCashier.ClosedAt,
+            OpenedBy = updatedCashier.OpenedBy,
+            InitialAmount = updatedCashier.InitialAmount,
+            CurrentAmount = updatedCashier.CurrentAmount,
+            TotalSales = updatedCashier.TotalSales,
+            TotalOrders = updatedCashier.TotalOrders
         };
     }
 

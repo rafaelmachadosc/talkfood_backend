@@ -11,6 +11,7 @@ public class OrderDto
     public bool Draft { get; set; }
     public string? Name { get; set; }
     public string? Phone { get; set; }
+    public int? CommandNumber { get; set; } // Número da comanda
     [System.Text.Json.Serialization.JsonIgnore]
     public OrderType OrderType { get; set; } // Enum interno
     public string orderType { get; set; } = string.Empty; // String para frontend: "MESA" ou "BALCAO"

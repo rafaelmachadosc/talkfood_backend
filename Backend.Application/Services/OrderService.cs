@@ -24,7 +24,7 @@ public class OrderService
         _itemRepository = itemRepository;
     }
 
-    public async Task<OrderDto> CreateOrderAsync(int? table, string? name, string? phone, OrderType orderType, CancellationToken cancellationToken = default)
+    public async Task<OrderDto> CreateOrderAsync(int? table, string? name, string? phone, int? commandNumber, OrderType orderType, CancellationToken cancellationToken = default)
     {
         Guid? tableId = null;
         if (table.HasValue)
@@ -39,6 +39,7 @@ public class OrderService
             TableId = tableId,
             Name = name,
             Phone = phone,
+            CommandNumber = commandNumber,
             OrderType = orderType,
             Draft = true,
             Status = false
@@ -214,6 +215,38 @@ public class OrderService
         return MapToDto(updatedOrder!);
     }
 
+    public async Task<OrderDto> UpdateCommandNumberAsync(Guid orderId, int? commandNumber, CancellationToken cancellationToken = default)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        if (order == null)
+        {
+            throw new KeyNotFoundException("Pedido não encontrado");
+        }
+
+        order.CommandNumber = commandNumber;
+        await _orderRepository.UpdateAsync(order, cancellationToken);
+
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
+    }
+
+    public async Task<IEnumerable<OrderDto>> GetOrdersByCommandOrNameAsync(int? commandNumber, string? name, CancellationToken cancellationToken = default)
+    {
+        var allOrders = await _orderRepository.GetAllAsync(cancellationToken);
+        
+        if (commandNumber.HasValue)
+        {
+            allOrders = allOrders.Where(o => o.CommandNumber == commandNumber.Value);
+        }
+        
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            allOrders = allOrders.Where(o => o.Name != null && o.Name.ToLower().Contains(name.ToLower()));
+        }
+
+        return allOrders.Select(MapToDto);
+    }
+
     private static OrderDto MapToDto(Order order)
     {
         return new OrderDto
@@ -225,10 +258,11 @@ public class OrderService
             Draft = order.Draft,
             Name = order.Name,
             Phone = order.Phone,
+            CommandNumber = order.CommandNumber,
             OrderType = order.OrderType,
             orderType = order.OrderType == OrderType.Mesa ? "MESA" : "BALCAO",
             Viewed = order.Viewed,
-            Items = order.Items.Select(i => new ItemDto
+            Items = order.Items.Where(i => !i.IsPaid).Select(i => new ItemDto
             {
                 Id = i.Id,
                 Amount = i.Amount,

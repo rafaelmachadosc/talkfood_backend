@@ -10,6 +10,7 @@ public class Order : BaseEntity
     public bool Draft { get; set; } = true;
     public string? Name { get; set; }
     public string? Phone { get; set; }
+    public int? CommandNumber { get; set; } // Número da comanda
     public OrderType OrderType { get; set; } = OrderType.Mesa;
     public bool Viewed { get; set; } = false;
     public Table? TableRelation { get; set; }

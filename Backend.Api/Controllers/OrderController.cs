@@ -53,6 +53,7 @@ public class OrderController : ControllerBase
                 request.Table,
                 request.Name,
                 request.Phone,
+                request.CommandNumber,
                 orderType,
                 cancellationToken
             );
@@ -85,6 +86,7 @@ public class OrderController : ControllerBase
                 request.Table,
                 request.Name,
                 request.Phone,
+                request.CommandNumber,
                 orderType,
                 cancellationToken
             );
@@ -265,6 +267,45 @@ public class OrderController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
+    }
+
+    [HttpPut("{id}/command-number")]
+    [HttpPut("command-number")]
+    public async Task<ActionResult<OrderDto>> UpdateCommandNumber(Guid? id, [FromBody] UpdateCommandNumberRequestDto? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (request != null && !string.IsNullOrEmpty(request.order_id))
+            {
+                if (!Guid.TryParse(request.order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            var order = await _orderService.UpdateCommandNumberAsync(orderId, request?.commandNumber, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("by-command-or-name")]
+    public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrdersByCommandOrName([FromQuery] int? commandNumber, [FromQuery] string? name, CancellationToken cancellationToken)
+    {
+        var orders = await _orderService.GetOrdersByCommandOrNameAsync(commandNumber, name, cancellationToken);
+        return Ok(orders);
     }
 
     [HttpDelete("{id}")]
@@ -572,11 +613,21 @@ public class ViewedOrderRequestDto
     public string? order_id { get; set; }
 }
 
+public class UpdateCommandNumberRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
+    public int? commandNumber { get; set; }
+}
+
 public class CreateOrderRequestDto
 {
     public int? Table { get; set; }
     public string? Name { get; set; }
     public string? Phone { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
+    public int? CommandNumber { get; set; } // Número da comanda
     [System.Text.Json.Serialization.JsonIgnore]
     public OrderType? OrderType { get; set; } // Ignorado no JSON, usado apenas internamente
     public string? orderType { get; set; } // camelCase do frontend - aceita "MESA" ou "BALCAO"
