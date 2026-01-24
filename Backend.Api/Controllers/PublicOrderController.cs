@@ -34,13 +34,6 @@ public class PublicOrderController : ControllerBase
                 else if (request.orderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
-            else if (!string.IsNullOrEmpty(request.OrderType))
-            {
-                if (request.OrderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
-                    orderType = OrderType.Mesa;
-                else if (request.OrderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
-                    orderType = OrderType.Balcao;
-            }
 
             var order = await _orderService.CreateOrderAsync(
                 request.Table,

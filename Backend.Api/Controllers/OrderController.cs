@@ -88,13 +88,6 @@ public class OrderController : ControllerBase
                 else if (request.orderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
                     orderType = OrderType.Balcao;
             }
-            else if (!string.IsNullOrEmpty(request.OrderType))
-            {
-                if (request.OrderType.Equals("MESA", StringComparison.OrdinalIgnoreCase))
-                    orderType = OrderType.Mesa;
-                else if (request.OrderType.Equals("BALCAO", StringComparison.OrdinalIgnoreCase))
-                    orderType = OrderType.Balcao;
-            }
 
             var order = await _orderService.CreateOrderAsync(
                 request.Table,
@@ -706,8 +699,8 @@ public class UpdateOrderRequestDto
 
 public class CreateOrderRequestDto
 {
-    [System.Text.Json.Serialization.JsonPropertyName("OrderType")]
-    public string? OrderType { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("orderType")]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? orderType { get; set; } // camelCase do frontend - aceita "MESA" ou "BALCAO"
     public int? Table { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
@@ -715,5 +708,6 @@ public class CreateOrderRequestDto
     public string? Name { get; set; }
     public string? Phone { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("Items")]
+    [System.Text.Json.Serialization.JsonIgnore]
     public List<object> Items { get; set; } = new();
 }
