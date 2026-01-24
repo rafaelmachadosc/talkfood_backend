@@ -324,7 +324,38 @@ public class OrderController : ControllerBase
                 return BadRequest(new { error = "Order ID é obrigatório" });
             }
 
-            var order = await _orderService.UpdateOrderInfoAsync(orderId, request?.name, request?.commandNumber, cancellationToken);
+            int? commandNumber = null;
+            if (request?.commandNumber != null)
+            {
+                if (request.commandNumber is int i)
+                {
+                    commandNumber = i;
+                }
+                else if (request.commandNumber is string str && !string.IsNullOrWhiteSpace(str))
+                {
+                    if (int.TryParse(str, out var parsed))
+                    {
+                        commandNumber = parsed;
+                    }
+                }
+                else if (request.commandNumber is System.Text.Json.JsonElement jsonElement)
+                {
+                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        commandNumber = jsonElement.GetInt32();
+                    }
+                    else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        var str = jsonElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(str) && int.TryParse(str, out var parsed))
+                        {
+                            commandNumber = parsed;
+                        }
+                    }
+                }
+            }
+
+            var order = await _orderService.UpdateOrderInfoAsync(orderId, request?.name, commandNumber, cancellationToken);
             return Ok(order);
         }
         catch (KeyNotFoundException ex)
@@ -660,7 +691,7 @@ public class UpdateOrderRequestDto
     [System.Text.Json.Serialization.JsonPropertyName("name")]
     public string? name { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
-    public int? commandNumber { get; set; }
+    public object? commandNumber { get; set; } // Pode ser int, string ou null
 }
 
 public class CreateOrderRequestDto

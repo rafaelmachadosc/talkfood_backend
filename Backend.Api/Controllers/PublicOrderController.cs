@@ -175,4 +175,89 @@ public class PublicOrderController : ControllerBase
             return NotFound(new { error = ex.Message });
         }
     }
+
+    [HttpPut("{id}")]
+    [HttpPut] // Suporta também /api/public/order com order_id no body
+    public async Task<ActionResult<OrderDto>> UpdateOrder(Guid? id, [FromBody] UpdateOrderRequestDto? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Guid orderId;
+            if (id.HasValue)
+            {
+                orderId = id.Value;
+            }
+            else if (request != null && !string.IsNullOrEmpty(request.order_id))
+            {
+                if (!Guid.TryParse(request.order_id, out orderId))
+                {
+                    return BadRequest(new { error = "Order ID inválido" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            int? commandNumber = null;
+            if (request?.commandNumber != null)
+            {
+                if (request.commandNumber is int i)
+                {
+                    commandNumber = i;
+                }
+                else if (request.commandNumber is string str && !string.IsNullOrWhiteSpace(str))
+                {
+                    if (int.TryParse(str, out var parsed))
+                    {
+                        commandNumber = parsed;
+                    }
+                }
+                else if (request.commandNumber is System.Text.Json.JsonElement jsonElement)
+                {
+                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        commandNumber = jsonElement.GetInt32();
+                    }
+                    else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        var str = jsonElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(str) && int.TryParse(str, out var parsed))
+                        {
+                            commandNumber = parsed;
+                        }
+                    }
+                }
+            }
+
+            var order = await _orderService.UpdateOrderInfoAsync(orderId, request?.name, commandNumber, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+}
+
+public class UpdateOrderRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("name")]
+    public string? name { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
+    public object? commandNumber { get; set; } // Pode ser int, string ou null
+}
+
+public class CreateOrderRequestDto
+{
+    public int? Table { get; set; }
+    public string? Name { get; set; }
+    public string? Phone { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("commandNumber")]
+    public int? CommandNumber { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public OrderType? OrderType { get; set; }
+    public string? orderType { get; set; }
 }

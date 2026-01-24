@@ -238,8 +238,24 @@ public class OrderService
             throw new KeyNotFoundException("Pedido não encontrado");
         }
 
-        if (name != null) order.Name = name;
-        if (commandNumber.HasValue) order.CommandNumber = commandNumber;
+        if (name != null && name.Trim() != "") 
+        {
+            order.Name = name.Trim();
+        }
+        else if (name == "")
+        {
+            order.Name = null;
+        }
+        
+        if (commandNumber.HasValue) 
+        {
+            order.CommandNumber = commandNumber.Value;
+        }
+        else if (commandNumber == null && name == null)
+        {
+            // Se ambos são null, não fazer nada ou resetar
+            order.CommandNumber = null;
+        }
 
         await _orderRepository.UpdateAsync(order, cancellationToken);
 
