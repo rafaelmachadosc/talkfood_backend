@@ -331,9 +331,9 @@ public class OrderController : ControllerBase
                 {
                     commandNumber = i;
                 }
-                else if (request.commandNumber is string str && !string.IsNullOrWhiteSpace(str))
+                else if (request.commandNumber is string strValue && !string.IsNullOrWhiteSpace(strValue))
                 {
-                    if (int.TryParse(str, out var parsed))
+                    if (int.TryParse(strValue, out var parsed))
                     {
                         commandNumber = parsed;
                     }
@@ -346,8 +346,8 @@ public class OrderController : ControllerBase
                     }
                     else if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
-                        var str = jsonElement.GetString();
-                        if (!string.IsNullOrWhiteSpace(str) && int.TryParse(str, out var parsed))
+                        var strValue2 = jsonElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(strValue2) && int.TryParse(strValue2, out var parsed))
                         {
                             commandNumber = parsed;
                         }
