@@ -108,7 +108,6 @@ builder.Services.AddAuthorization();
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRepository<Category>, CategoryRepository>();
 builder.Services.AddScoped<IRepository<Product>, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<ITableRepository, TableRepository>();
@@ -120,7 +119,6 @@ builder.Services.AddScoped<IRepository<Item>, ItemRepository>();
 // Services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<OrderPaymentService>();

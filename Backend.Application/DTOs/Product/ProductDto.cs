@@ -1,5 +1,3 @@
-using Backend.Application.DTOs.Category;
-
 namespace Backend.Application.DTOs.Product;
 
 public class ProductDto
@@ -9,7 +7,6 @@ public class ProductDto
     public int Price { get; set; }
     public string Description { get; set; } = string.Empty;
     public bool Disabled { get; set; }
-    public Guid CategoryId { get; set; }
-    public CategoryDto? Category { get; set; } // Objeto categoria completo (opcional)
+    public string Category { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }

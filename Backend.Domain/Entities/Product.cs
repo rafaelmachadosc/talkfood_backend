@@ -6,7 +6,6 @@ public class Product : BaseEntity
     public int Price { get; set; } // em centavos
     public string Description { get; set; } = string.Empty;
     public bool Disabled { get; set; } = false;
-    public Guid CategoryId { get; set; }
-    public Category Category { get; set; } = null!;
+    public string Category { get; set; } = string.Empty;
     public ICollection<Item> Items { get; set; } = new List<Item>();
 }

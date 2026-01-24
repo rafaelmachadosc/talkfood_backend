@@ -10,7 +10,6 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<Table> Tables { get; set; }
     public DbSet<Order> Orders { get; set; }
@@ -29,16 +28,6 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email).IsUnique();
-        });
-
-        modelBuilder.Entity<Category>(entity =>
-        {
-            entity.ToTable("categories");
-            entity.HasKey(e => e.Id);
-            entity.HasMany(e => e.Products)
-                  .WithOne(e => e.Category)
-                  .HasForeignKey(e => e.CategoryId)
-                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Product>(entity =>

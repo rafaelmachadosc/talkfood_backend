@@ -13,23 +13,16 @@ public class ProductRepository : BaseRepository<Product>, IRepository<Product>
 
     public override async Task<IEnumerable<Product>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .Include(p => p.Category)
-            .ToListAsync(cancellationToken);
+        return await _dbSet.ToListAsync(cancellationToken);
     }
 
     public override async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .Include(p => p.Category)
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        return await _dbSet.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public override async Task<IEnumerable<Product>> FindAsync(System.Linq.Expressions.Expression<Func<Product, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .Include(p => p.Category)
-            .Where(predicate)
-            .ToListAsync(cancellationToken);
+        return await _dbSet.Where(predicate).ToListAsync(cancellationToken);
     }
 }

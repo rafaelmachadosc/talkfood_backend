@@ -24,47 +24,14 @@ public class ProductController : ControllerBase
     {
         try
         {
-            // Suporta category_id como Guid ou string (vindo do JSON como string)
-            Guid categoryId = Guid.Empty;
-            
-            if (request.category_id != null)
-            {
-                // Converter qualquer tipo para string e depois para Guid
-                string categoryIdStr = request.category_id switch
-                {
-                    Guid g => g.ToString(),
-                    string s => s,
-                    System.Text.Json.JsonElement jsonElement => jsonElement.GetString() ?? string.Empty,
-                    _ => request.category_id.ToString() ?? string.Empty
-                };
-                
-                if (string.IsNullOrWhiteSpace(categoryIdStr))
-                {
-                    return BadRequest(new { error = "Category ID não pode ser vazio" });
-                }
-                
-                if (!Guid.TryParse(categoryIdStr, out categoryId))
-                {
-                    return BadRequest(new { error = $"Category ID inválido: '{categoryIdStr}'. Deve ser um GUID válido." });
-                }
-            }
-            else
-            {
-                return BadRequest(new { error = "Category ID é obrigatório" });
-            }
-
             var product = await _productService.CreateProductAsync(
                 request.Name,
                 request.Price,
                 request.Description,
-                categoryId,
+                request.Category ?? string.Empty,
                 cancellationToken
             );
             return Ok(product);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
         }
         catch (Exception ex)
         {
@@ -107,18 +74,17 @@ public class ProductController : ControllerBase
                 Price = p.Price,
                 Description = p.Description,
                 Disabled = p.Disabled,
-                CategoryId = p.CategoryId,
                 Category = p.Category,
                 CreatedAt = p.CreatedAt
             }).ToList()
         });
     }
 
-    [HttpGet("category/{categoryId}")]
+    [HttpGet("category/{category}")]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsByCategory(Guid categoryId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsByCategory(string category, CancellationToken cancellationToken)
     {
-        var products = await _productService.GetProductsByCategoryAsync(categoryId, cancellationToken);
+        var products = await _productService.GetProductsByCategoryAsync(category, cancellationToken);
         return Ok(products);
     }
 
@@ -145,42 +111,13 @@ public class ProductController : ControllerBase
                 return BadRequest(new { error = "Product ID é obrigatório" });
             }
 
-            // Validar se produto existe
-            var existingProduct = await _productService.GetProductByIdAsync(productId, cancellationToken);
-            if (existingProduct == null)
-            {
-                return NotFound(new { error = "Produto não encontrado" });
-            }
-
-            // Validar category_id se fornecido
-            Guid? categoryId = null;
-            if (request.category_id != null)
-            {
-                string categoryIdStr = request.category_id switch
-                {
-                    Guid g => g.ToString(),
-                    string s => s,
-                    System.Text.Json.JsonElement jsonElement => jsonElement.GetString() ?? string.Empty,
-                    _ => request.category_id.ToString() ?? string.Empty
-                };
-
-                if (!string.IsNullOrWhiteSpace(categoryIdStr))
-                {
-                    if (!Guid.TryParse(categoryIdStr, out var parsedCategoryId))
-                    {
-                        return BadRequest(new { error = $"Category ID inválido: '{categoryIdStr}'. Deve ser um GUID válido." });
-                    }
-                    categoryId = parsedCategoryId;
-                }
-            }
-
             var product = await _productService.UpdateProductAsync(
                 productId,
                 request.Name,
                 request.Price,
                 request.Description,
                 request.Disabled,
-                categoryId ?? Guid.Empty,
+                request.Category,
                 cancellationToken
             );
             return Ok(product);
@@ -230,12 +167,8 @@ public class CreateProductRequestDto
     public string Name { get; set; } = string.Empty;
     public int Price { get; set; }
     public string Description { get; set; } = string.Empty;
-    [System.Text.Json.Serialization.JsonIgnore]
-    public Guid CategoryId { get; set; } // Ignorado no JSON
-    [System.Text.Json.Serialization.JsonIgnore]
-    public Guid? categoryId { get; set; } // Ignorado no JSON
-    [System.Text.Json.Serialization.JsonPropertyName("category_id")]
-    public object? category_id { get; set; } // snake_case do frontend - pode ser Guid ou string
+    [System.Text.Json.Serialization.JsonPropertyName("category")]
+    public string? Category { get; set; }
 }
 
 public class UpdateProductRequestDto
@@ -247,8 +180,8 @@ public class UpdateProductRequestDto
     public int? Price { get; set; }
     public string? Description { get; set; }
     public bool? Disabled { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("category_id")]
-    public object? category_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("category")]
+    public string? Category { get; set; }
 }
 
 public class SearchProductsResponseDto
