@@ -119,4 +119,43 @@ public class AnalyticsService
             PaymentMethods = paymentMethods
         };
     }
+
+    public async Task<DailySalesResponseDto> GetDailySalesAsync(int days = 7, CancellationToken cancellationToken = default)
+    {
+        var endDate = DateTime.UtcNow.Date;
+        var startDate = endDate.AddDays(-(days - 1));
+
+        // Buscar todos os pedidos finalizados
+        var allOrders = await _orderRepository.GetAllAsync(cancellationToken);
+        var finishedOrders = allOrders.Where(o => o.Status).ToList();
+
+        // Buscar todos os pagamentos
+        var allPayments = await _paymentRepository.GetAllAsync(cancellationToken);
+
+        // Filtrar pagamentos de pedidos finalizados
+        var finishedOrderIds = finishedOrders.Select(o => o.Id).ToHashSet();
+        var finishedPayments = allPayments.Where(p => finishedOrderIds.Contains(p.OrderId)).ToList();
+
+        // Criar lista de dias
+        var dailySales = new List<DailySalesDto>();
+        
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var ordersOnDate = finishedOrders.Where(o => o.CreatedAt.Date == date).ToList();
+            var paymentsOnDate = finishedPayments.Where(p => p.CreatedAt.Date == date).ToList();
+            var totalOnDate = paymentsOnDate.Sum(p => p.Amount);
+
+            dailySales.Add(new DailySalesDto
+            {
+                Date = date.ToString("yyyy-MM-dd"),
+                Total = totalOnDate,
+                Orders = ordersOnDate.Count
+            });
+        }
+
+        return new DailySalesResponseDto
+        {
+            Sales = dailySales
+        };
+    }
 }

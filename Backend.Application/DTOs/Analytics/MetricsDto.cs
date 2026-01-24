@@ -20,3 +20,15 @@ public class PaymentMethodsDto
     public int CARTAO_CREDITO { get; set; } = 0; // em centavos
     public int CARTAO_DEBITO { get; set; } = 0; // em centavos
 }
+
+public class DailySalesDto
+{
+    public string Date { get; set; } = string.Empty; // formato: "yyyy-MM-dd"
+    public int Total { get; set; } = 0; // em centavos
+    public int Orders { get; set; } = 0;
+}
+
+public class DailySalesResponseDto
+{
+    public List<DailySalesDto> Sales { get; set; } = new();
+}

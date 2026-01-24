@@ -30,4 +30,18 @@ public class AnalyticsController : ControllerBase
             return StatusCode(500, new { error = ex.Message });
         }
     }
+
+    [HttpGet("daily-sales")]
+    public async Task<ActionResult<DailySalesResponseDto>> GetDailySales([FromQuery] int? days, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dailySales = await _analyticsService.GetDailySalesAsync(days ?? 7, cancellationToken);
+            return Ok(dailySales);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
