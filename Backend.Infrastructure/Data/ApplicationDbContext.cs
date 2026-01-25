@@ -56,6 +56,10 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable("orders");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.CommandNumber)
+                  .HasColumnName("CommandNumber");
+            entity.Property(e => e.Table)
+                  .HasColumnName("Table");
             entity.HasMany(e => e.Items)
                   .WithOne(e => e.Order)
                   .HasForeignKey(e => e.OrderId)

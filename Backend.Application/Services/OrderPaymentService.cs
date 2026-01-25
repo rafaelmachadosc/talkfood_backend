@@ -63,11 +63,33 @@ public class OrderPaymentService
 
         await _paymentRepository.AddAsync(payment, cancellationToken);
 
+        // Marcar itens como pagos quando há pagamento parcial por itens específicos
+        if (itemIds != null && itemIds.Any())
+        {
+            foreach (var itemId in itemIds)
+            {
+                var item = order.Items.FirstOrDefault(i => i.Id == itemId);
+                if (item != null)
+                {
+                    item.IsPaid = true;
+                    await _itemRepository.UpdateAsync(item, cancellationToken);
+                }
+            }
+        }
+
         totalReceived += receivedAmount;
         var remainingAmount = orderTotal - totalReceived;
 
+        // Se não há mais valor pendente, finalizar o pedido
         if (remainingAmount <= 0)
         {
+            // Marcar todos os itens restantes como pagos
+            foreach (var item in order.Items.Where(i => !i.IsPaid))
+            {
+                item.IsPaid = true;
+                await _itemRepository.UpdateAsync(item, cancellationToken);
+            }
+            
             order.Status = true;
             await _orderRepository.UpdateAsync(order, cancellationToken);
         }

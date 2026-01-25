@@ -294,6 +294,8 @@ public class OrderService
 
     private static OrderDto MapToDto(Order order)
     {
+        var unpaidItems = order.Items?.Where(i => !i.IsPaid).ToList() ?? new List<Item>();
+        
         return new OrderDto
         {
             Id = order.Id,
@@ -304,22 +306,21 @@ public class OrderService
             Name = order.Name,
             Phone = order.Phone,
             CommandNumber = order.CommandNumber,
-            OrderType = order.OrderType,
-            orderType = order.OrderType == OrderType.Mesa ? "MESA" : "BALCAO",
+            OrderType = order.OrderType == OrderType.Mesa ? "MESA" : "BALCAO",
             Viewed = order.Viewed,
-            Items = order.Items.Where(i => !i.IsPaid).Select(i => new ItemDto
+            Items = unpaidItems.Select(i => new ItemDto
             {
                 Id = i.Id,
                 Amount = i.Amount,
                 ProductId = i.ProductId,
-                Product = i.Product != null ? new ProductDto
+                Product = i.Product != null ? new Backend.Application.DTOs.Order.ProductDto
                 {
                     Id = i.Product.Id,
                     Name = i.Product.Name,
                     Price = i.Product.Price,
                     Description = i.Product.Description
                 } : null
-            }).ToList(),
+            }).ToList(), // Sempre retorna array, nunca null
             CreatedAt = order.CreatedAt
         };
     }

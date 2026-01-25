@@ -12,11 +12,11 @@ public class OrderDto
     public string? Name { get; set; }
     public string? Phone { get; set; }
     public string? CommandNumber { get; set; } // Número da comanda (string)
-    [System.Text.Json.Serialization.JsonIgnore]
-    public OrderType OrderType { get; set; } // Enum interno
-    public string orderType { get; set; } = string.Empty; // String para frontend: "MESA" ou "BALCAO"
+    [System.Text.Json.Serialization.JsonPropertyName("orderType")]
+    public string OrderType { get; set; } = string.Empty; // String para frontend: "MESA" ou "BALCAO"
     public bool Viewed { get; set; }
-    public List<ItemDto> Items { get; set; } = new();
+    [System.Text.Json.Serialization.JsonPropertyName("items")]
+    public List<ItemDto> Items { get; set; } = new(); // Sempre array, nunca null
     public DateTime CreatedAt { get; set; }
 }
 
