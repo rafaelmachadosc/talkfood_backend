@@ -115,6 +115,7 @@ builder.Services.AddScoped<IRepository<Cashier>, CashierRepository>();
 builder.Services.AddScoped<IRepository<CashierMovement>, CashierMovementRepository>();
 builder.Services.AddScoped<IRepository<OrderPayment>, OrderPaymentRepository>();
 builder.Services.AddScoped<IRepository<Item>, ItemRepository>();
+builder.Services.AddScoped<IRepository<DailySales>, DailySalesRepository>();
 
 // Services
 builder.Services.AddScoped<AuthService>();
@@ -124,6 +125,7 @@ builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<TableService>();
 builder.Services.AddScoped<CashierService>();
+builder.Services.AddScoped<DailySalesService>();
 builder.Services.AddScoped<AnalyticsService>();
 
 // Tunnel Strategy Pattern

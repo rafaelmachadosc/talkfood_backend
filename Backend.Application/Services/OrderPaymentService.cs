@@ -9,15 +9,18 @@ public class OrderPaymentService
     private readonly IRepository<OrderPayment> _paymentRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly IRepository<Item> _itemRepository;
+    private readonly DailySalesService _dailySalesService;
 
     public OrderPaymentService(
         IRepository<OrderPayment> paymentRepository,
         IOrderRepository orderRepository,
-        IRepository<Item> itemRepository)
+        IRepository<Item> itemRepository,
+        DailySalesService dailySalesService)
     {
         _paymentRepository = paymentRepository;
         _orderRepository = orderRepository;
         _itemRepository = itemRepository;
+        _dailySalesService = dailySalesService;
     }
 
     public async Task<ReceivePartialPaymentResponseDto> ReceivePartialPaymentAsync(
@@ -93,6 +96,9 @@ public class OrderPaymentService
             order.Status = true;
             await _orderRepository.UpdateAsync(order, cancellationToken);
         }
+
+        // Atualizar daily_sales com o valor pago (não o total do pedido)
+        await _dailySalesService.UpsertDailySalesAsync(DateTime.UtcNow, receivedAmount, false, cancellationToken);
 
         return new ReceivePartialPaymentResponseDto
         {

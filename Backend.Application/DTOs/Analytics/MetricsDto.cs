@@ -32,3 +32,8 @@ public class DailySalesResponseDto
 {
     public List<DailySalesDto> Sales { get; set; } = new();
 }
+
+public class DailySalesRangeResponseDto
+{
+    public List<DailySalesDto> Sales { get; set; } = new();
+}

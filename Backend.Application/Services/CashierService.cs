@@ -7,10 +7,12 @@ namespace Backend.Application.Services;
 public class CashierService
 {
     private readonly IRepository<Cashier> _cashierRepository;
+    private readonly DailySalesService _dailySalesService;
 
-    public CashierService(IRepository<Cashier> cashierRepository)
+    public CashierService(IRepository<Cashier> cashierRepository, DailySalesService dailySalesService)
     {
         _cashierRepository = cashierRepository;
+        _dailySalesService = dailySalesService;
     }
 
     public async Task<CashierDto> GetCashierStatusAsync(CancellationToken cancellationToken = default)
@@ -156,6 +158,9 @@ public class CashierService
         activeCashier.TotalOrders += 1;
 
         await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
+
+        // Atualizar daily_sales com o valor recebido
+        await _dailySalesService.UpsertDailySalesAsync(DateTime.UtcNow, amount, false, cancellationToken);
 
         return new CashierMovementDto
         {

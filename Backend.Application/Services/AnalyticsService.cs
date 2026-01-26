@@ -8,13 +8,16 @@ public class AnalyticsService
 {
     private readonly IRepository<OrderPayment> _paymentRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly DailySalesService _dailySalesService;
 
     public AnalyticsService(
         IRepository<OrderPayment> paymentRepository,
-        IOrderRepository orderRepository)
+        IOrderRepository orderRepository,
+        DailySalesService dailySalesService)
     {
         _paymentRepository = paymentRepository;
         _orderRepository = orderRepository;
+        _dailySalesService = dailySalesService;
     }
 
     public async Task<MetricsDto> GetMetricsAsync(CancellationToken cancellationToken = default)
@@ -55,8 +58,12 @@ public class AnalyticsService
             try
             {
                 var totalTicket = ordersToday.Sum(o =>
-                    o.Items?.Where(i => i.Product != null)
-                           .Sum(i => i.Product.Price * i.Amount) ?? 0);
+                {
+                    if (o.Items == null) return 0;
+                    return o.Items
+                        .Where(i => i.Product != null && !i.IsPaid)
+                        .Sum(i => i.Product!.Price * i.Amount);
+                });
 
                 if (totalTicket > 0)
                 {
@@ -65,6 +72,7 @@ public class AnalyticsService
             }
             catch
             {
+                // Log error but don't fail
                 averageTicket = 0;
             }
         }
@@ -157,5 +165,66 @@ public class AnalyticsService
         {
             Sales = dailySales
         };
+    }
+
+    public async Task<DailySalesDto> GetDailySalesByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var dailySales = await _dailySalesService.GetDailySalesAsync(date, cancellationToken);
+            
+            if (dailySales == null)
+            {
+                return new DailySalesDto
+                {
+                    Date = date.ToString("yyyy-MM-dd"),
+                    Total = 0,
+                    Orders = 0
+                };
+            }
+
+            return new DailySalesDto
+            {
+                Date = dailySales.Date.ToString("yyyy-MM-dd"),
+                Total = dailySales.TotalSales,
+                Orders = dailySales.TotalOrders
+            };
+        }
+        catch
+        {
+            return new DailySalesDto
+            {
+                Date = date.ToString("yyyy-MM-dd"),
+                Total = 0,
+                Orders = 0
+            };
+        }
+    }
+
+    public async Task<DailySalesRangeResponseDto> GetDailySalesRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var dailySalesList = await _dailySalesService.GetDailySalesRangeAsync(startDate, endDate, cancellationToken);
+            
+            var result = dailySalesList.Select(d => new DailySalesDto
+            {
+                Date = d.Date.ToString("yyyy-MM-dd"),
+                Total = d.TotalSales,
+                Orders = d.TotalOrders
+            }).ToList();
+
+            return new DailySalesRangeResponseDto
+            {
+                Sales = result
+            };
+        }
+        catch
+        {
+            return new DailySalesRangeResponseDto
+            {
+                Sales = new List<DailySalesDto>()
+            };
+        }
     }
 }

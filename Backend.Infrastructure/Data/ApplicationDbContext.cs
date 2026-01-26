@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Cashier> Cashiers { get; set; }
     public DbSet<CashierMovement> CashierMovements { get; set; }
     public DbSet<OrderPayment> OrderPayments { get; set; }
+    public DbSet<DailySales> DailySales { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -96,6 +97,17 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.OrderId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DailySales>(entity =>
+        {
+            entity.ToTable("daily_sales");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Date).IsUnique();
+            entity.Property(e => e.Date)
+                  .HasConversion(
+                      v => v.Date,
+                      v => v);
         });
     }
 }

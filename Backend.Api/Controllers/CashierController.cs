@@ -15,12 +15,14 @@ public class CashierController : ControllerBase
     private readonly CashierService _cashierService;
     private readonly OrderPaymentService _paymentService;
     private readonly OrderService _orderService;
+    private readonly DailySalesService _dailySalesService;
 
-    public CashierController(CashierService cashierService, OrderPaymentService paymentService, OrderService orderService)
+    public CashierController(CashierService cashierService, OrderPaymentService paymentService, OrderService orderService, DailySalesService dailySalesService)
     {
         _cashierService = cashierService;
         _paymentService = paymentService;
         _orderService = orderService;
+        _dailySalesService = dailySalesService;
     }
 
     [HttpGet("status")]
