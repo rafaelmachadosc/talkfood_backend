@@ -35,10 +35,29 @@ public class PublicOrderController : ControllerBase
                     orderType = OrderType.Balcao;
             }
 
+            // Validação: MESA precisa de table e CommandNumber
+            if (orderType == OrderType.Mesa)
+            {
+                if (!request.Table.HasValue)
+                {
+                    return BadRequest(new { error = "Número da mesa é obrigatório para pedidos de mesa" });
+                }
+                if (string.IsNullOrWhiteSpace(request.CommandNumber))
+                {
+                    return BadRequest(new { error = "Número da comanda é obrigatório para pedidos de mesa" });
+                }
+            }
+            
+            // Validação: BALCAO precisa de nome
+            if (orderType == OrderType.Balcao && string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(new { error = "Nome do cliente é obrigatório para pedidos de balcão" });
+            }
+
             var order = await _orderService.CreateOrderAsync(
                 request.Table,
                 request.Name,
-                request.Phone,
+                request.Phone, // Phone é opcional (não validado)
                 request.CommandNumber,
                 orderType,
                 cancellationToken
