@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<CashierMovement> CashierMovements { get; set; }
     public DbSet<OrderPayment> OrderPayments { get; set; }
     public DbSet<DailySales> DailySales { get; set; }
+    public DbSet<Printer> Printers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,6 +109,13 @@ public class ApplicationDbContext : DbContext
                   .HasConversion(
                       v => v.Date,
                       v => v);
+        });
+
+        modelBuilder.Entity<Printer>(entity =>
+        {
+            entity.ToTable("printers");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
         });
     }
 }
