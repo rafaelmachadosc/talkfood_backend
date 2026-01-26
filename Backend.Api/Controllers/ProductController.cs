@@ -49,6 +49,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("public")]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetAllProductsPublic([FromQuery] bool? disabled, CancellationToken cancellationToken)
     {
         var products = await _productService.GetAllProductsAsync(disabled ?? false, cancellationToken);
