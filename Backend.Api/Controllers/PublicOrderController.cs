@@ -176,6 +176,60 @@ public class PublicOrderController : ControllerBase
         }
     }
 
+    [HttpPost("add-items")]
+    public async Task<ActionResult<OrderDto>> AddMultipleItems([FromBody] AddItemsRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.order_id))
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            if (!Guid.TryParse(request.order_id, out var orderId))
+            {
+                return BadRequest(new { error = "Order ID inválido" });
+            }
+
+            if (request.items == null || !request.items.Any())
+            {
+                return BadRequest(new { error = "Pelo menos um item é obrigatório" });
+            }
+
+            var items = new List<(Guid productId, int amount)>();
+            foreach (var item in request.items)
+            {
+                if (string.IsNullOrEmpty(item.product_id))
+                {
+                    return BadRequest(new { error = "Product ID é obrigatório para todos os itens" });
+                }
+
+                if (!Guid.TryParse(item.product_id, out var productId))
+                {
+                    return BadRequest(new { error = $"Product ID inválido: {item.product_id}" });
+                }
+
+                if (item.amount <= 0)
+                {
+                    return BadRequest(new { error = "Amount deve ser maior que zero" });
+                }
+
+                items.Add((productId, item.amount));
+            }
+
+            var order = await _orderService.AddMultipleItemsAsync(orderId, items, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPut("{id}")]
     [HttpPut] // Suporta também /api/public/order com order_id no body
     public async Task<ActionResult<OrderDto>> UpdateOrder(Guid? id, [FromBody] UpdateOrderRequestDto? request, CancellationToken cancellationToken)
@@ -232,3 +286,4 @@ public class PublicOrderController : ControllerBase
         }
     }
 }
+

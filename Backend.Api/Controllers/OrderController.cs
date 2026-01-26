@@ -711,3 +711,19 @@ public class CreateOrderRequestDto
     [System.Text.Json.Serialization.JsonIgnore]
     public List<object> Items { get; set; } = new();
 }
+
+public class AddItemsRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("items")]
+    public List<AddItemsItemDto>? items { get; set; }
+}
+
+public class AddItemsItemDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("product_id")]
+    public string? product_id { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("amount")]
+    public int amount { get; set; }
+}
