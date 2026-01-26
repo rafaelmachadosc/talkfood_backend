@@ -122,10 +122,10 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<DailySalesService>();
 builder.Services.AddScoped<OrderPaymentService>();
 builder.Services.AddScoped<TableService>();
 builder.Services.AddScoped<CashierService>();
-builder.Services.AddScoped<DailySalesService>();
 builder.Services.AddScoped<AnalyticsService>();
 
 // Tunnel Strategy Pattern

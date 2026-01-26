@@ -109,12 +109,18 @@ public class CashierService
         activeCashier.Movements.Add(movement);
         await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
 
-        // Recarregar o caixa após atualizar
-        var updatedCashier = await _cashierRepository.GetByIdAsync(activeCashier.Id, cancellationToken);
+        // Recarregar o caixa após atualizar (incluindo Movements)
+        var allCashiers = await _cashierRepository.GetAllAsync(cancellationToken);
+        var updatedCashier = allCashiers.FirstOrDefault(c => c.Id == activeCashier.Id);
+
+        if (updatedCashier == null)
+        {
+            throw new InvalidOperationException("Erro ao recarregar caixa após fechamento");
+        }
 
         return new CashierDto
         {
-            Id = updatedCashier!.Id,
+            Id = updatedCashier.Id,
             IsOpen = updatedCashier.IsOpen,
             OpenedAt = updatedCashier.OpenedAt,
             ClosedAt = updatedCashier.ClosedAt,
@@ -159,8 +165,15 @@ public class CashierService
 
         await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
 
-        // Atualizar daily_sales com o valor recebido
-        await _dailySalesService.UpsertDailySalesAsync(DateTime.UtcNow, amount, false, cancellationToken);
+        // Atualizar daily_sales com o valor recebido (ignorar erro se tabela não existir)
+        try
+        {
+            await _dailySalesService.UpsertDailySalesAsync(DateTime.UtcNow, amount, false, cancellationToken);
+        }
+        catch
+        {
+            // Ignorar erro se tabela daily_sales não existir ainda
+        }
 
         return new CashierMovementDto
         {

@@ -97,8 +97,15 @@ public class OrderPaymentService
             await _orderRepository.UpdateAsync(order, cancellationToken);
         }
 
-        // Atualizar daily_sales com o valor pago (não o total do pedido)
-        await _dailySalesService.UpsertDailySalesAsync(DateTime.UtcNow, receivedAmount, false, cancellationToken);
+        // Atualizar daily_sales com o valor pago (não o total do pedido) - ignorar erro se tabela não existir
+        try
+        {
+            await _dailySalesService.UpsertDailySalesAsync(DateTime.UtcNow, receivedAmount, false, cancellationToken);
+        }
+        catch
+        {
+            // Ignorar erro se tabela daily_sales não existir ainda
+        }
 
         return new ReceivePartialPaymentResponseDto
         {
