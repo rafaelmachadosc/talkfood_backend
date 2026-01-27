@@ -20,6 +20,7 @@ public class PrintController : ControllerBase
     }
 
     [HttpPost("receipt")]
+    [Produces("application/json")]
     public async Task<ActionResult<PrintResponseDto>> PrintReceipt([FromBody] PrintRequestDto request, CancellationToken cancellationToken)
     {
         try
@@ -31,11 +32,14 @@ public class PrintController : ControllerBase
             );
 
             // Buscar impressora (se especificada) ou usar padrão
-            var printers = await _printService.GetAllPrintersAsync(cancellationToken);
-            var printer = request.PrinterId.HasValue
-                ? printers.FirstOrDefault(p => p.Id == request.PrinterId.Value && p.IsActive)
-                : printers.FirstOrDefault(p => p.IsActive && p.AutoPrint);
+            PrinterDto? printerDto = null;
+            if (request.PrinterId.HasValue)
+            {
+                var printers = await _printService.GetAllPrintersAsync(cancellationToken);
+                printerDto = printers.FirstOrDefault(p => p.Id == request.PrinterId.Value && p.IsActive);
+            }
 
+            // Converter PrinterDto para Printer entity se necessário (ou passar null)
             var rawData = await _printService.FormatReceiptForPrintAsync(receipt, null, cancellationToken);
 
             return Ok(new PrintResponseDto
@@ -58,6 +62,7 @@ public class PrintController : ControllerBase
     }
 
     [HttpGet("receipt/{orderId}")]
+    [Produces("application/json")]
     public async Task<ActionResult<PrintResponseDto>> GetReceipt(Guid orderId, [FromQuery] string receiptType = "ORDER", CancellationToken cancellationToken = default)
     {
         try

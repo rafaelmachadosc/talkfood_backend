@@ -84,16 +84,9 @@ public class PrintService
     public Task<string> FormatReceiptForPrintAsync(PrintReceiptDto receipt, Printer? printer, CancellationToken cancellationToken = default)
     {
         var paperWidth = printer?.PaperWidth ?? 80;
-        var isThermal = printer?.Type == "THERMAL" || printer == null;
-
-        if (isThermal)
-        {
-            return Task.FromResult(FormatThermalReceipt(receipt, paperWidth));
-        }
-        else
-        {
-            return Task.FromResult(FormatHtmlReceipt(receipt));
-        }
+        // Sempre retorna formato térmico (texto simples) - nunca HTML
+        // O HTML pode ser gerado no frontend se necessário
+        return Task.FromResult(FormatThermalReceipt(receipt, paperWidth));
     }
 
     private string FormatThermalReceipt(PrintReceiptDto receipt, int paperWidth)
