@@ -57,7 +57,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("https://talkfoodfrontend-production.up.railway.app", "http://localhost:3000")
+        policy.WithOrigins("https://talkfood.up.railway.app", "http://localhost:3000")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
