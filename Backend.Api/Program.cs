@@ -151,6 +151,14 @@ app.UseAuthorization();
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
+// Rota raiz simples para não retornar 404 em "/"
+app.MapGet("/", () => Results.Json(new
+{
+    status = "ok",
+    message = "Backend TalkFood está rodando",
+    docs = "/swagger"
+}));
+
 app.MapControllers();
 
 // Inicializar tunnel Cloudflare se configurado
