@@ -450,6 +450,49 @@ public class OrderController : ControllerBase
         }
     }
 
+    [HttpPost("update-item-quantity")]
+    public async Task<ActionResult<OrderDto>> UpdateItemQuantity([FromBody] UpdateItemQuantityRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.order_id))
+            {
+                return BadRequest(new { error = "Order ID é obrigatório" });
+            }
+
+            if (string.IsNullOrEmpty(request.product_id))
+            {
+                return BadRequest(new { error = "Product ID é obrigatório" });
+            }
+
+            if (!Guid.TryParse(request.order_id, out var orderId))
+            {
+                return BadRequest(new { error = "Order ID inválido" });
+            }
+
+            if (!Guid.TryParse(request.product_id, out var productId))
+            {
+                return BadRequest(new { error = "Product ID inválido" });
+            }
+
+            if (request.delta == 0)
+            {
+                return BadRequest(new { error = "Delta deve ser diferente de zero" });
+            }
+
+            var order = await _orderService.UpdateItemQuantityAsync(orderId, productId, request.delta, cancellationToken);
+            return Ok(order);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPost("public/{id}/add")]
     [HttpPost("public/add")] // Aceita também /api/order/public/add com order_id no body
     [AllowAnonymous]
@@ -726,4 +769,16 @@ public class AddItemsItemDto
     public string? product_id { get; set; }
     [System.Text.Json.Serialization.JsonPropertyName("amount")]
     public int amount { get; set; }
+}
+
+public class UpdateItemQuantityRequestDto
+{
+    [System.Text.Json.Serialization.JsonPropertyName("order_id")]
+    public string? order_id { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("product_id")]
+    public string? product_id { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("delta")]
+    public int delta { get; set; }
 }

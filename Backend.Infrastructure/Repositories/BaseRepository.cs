@@ -42,7 +42,13 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
         await _dbSet.AddAsync(entity, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        
+        var savedChanges = await _context.SaveChangesAsync(cancellationToken);
+        if (savedChanges == 0)
+        {
+            throw new InvalidOperationException("Nenhuma alteração foi salva no banco de dados");
+        }
+        
         return entity;
     }
 

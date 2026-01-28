@@ -224,6 +224,138 @@ public class CashierController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    [HttpGet("sales")]
+    public async Task<ActionResult<IEnumerable<CashierSaleDto>>> GetSalesByDate([FromQuery] string date, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(date))
+        {
+            return BadRequest(new { error = "Parâmetro date é obrigatório no formato YYYY-MM-DD" });
+        }
+
+        if (!DateTime.TryParse(date, out var parsedDate))
+        {
+            return BadRequest(new { error = "Parâmetro date inválido" });
+        }
+
+        var movements = await _cashierService.GetSalesByDateAsync(parsedDate, cancellationToken);
+        var result = new List<CashierSaleDto>();
+
+        foreach (var movement in movements)
+        {
+            Guid? orderId = TryExtractOrderIdFromObservation(movement.Observation);
+            Backend.Application.DTOs.Order.OrderDto? order = null;
+
+            if (orderId.HasValue)
+            {
+                try
+                {
+                    order = await _orderService.GetOrderByIdAsync(orderId.Value, cancellationToken);
+                }
+                catch
+                {
+                    // Ignorar erro de pedido não encontrado para não quebrar o grid
+                }
+            }
+
+            var sale = new CashierSaleDto
+            {
+                id = movement.Id.ToString(),
+                order_id = orderId?.ToString(),
+                table = order?.Table,
+                commandNumber = order?.CommandNumber,
+                name = order?.Name,
+                total = movement.Amount,
+                payment_method = movement.PaymentMethod ?? "DINHEIRO",
+                createdAt = movement.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            };
+
+            result.Add(sale);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpGet("sales/{orderId}")]
+    public async Task<ActionResult<CashierSaleDetailDto>> GetSaleDetail(Guid orderId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var order = await _orderService.GetOrderByIdAsync(orderId, cancellationToken);
+            var payments = await _paymentService.GetOrderPaymentsAsync(orderId, cancellationToken);
+
+            var items = new List<CashierSaleItemDto>();
+            foreach (var item in order.Items)
+            {
+                var unitPrice = item.Product?.Price ?? 0;
+                var totalPrice = unitPrice * item.Amount;
+
+                items.Add(new CashierSaleItemDto
+                {
+                    id = item.Id.ToString(),
+                    product_name = item.Product?.Name ?? "Produto",
+                    amount = item.Amount,
+                    unit_price = unitPrice,
+                    total_price = totalPrice
+                });
+            }
+
+            var firstPaymentMethod = payments.Payments.FirstOrDefault()?.PaymentMethod;
+
+            var detail = new CashierSaleDetailDto
+            {
+                order_id = order.Id.ToString(),
+                table = order.Table,
+                commandNumber = order.CommandNumber,
+                name = order.Name,
+                total = payments.OrderTotal,
+                payment_method = firstPaymentMethod,
+                total_received = payments.TotalReceived,
+                remaining_amount = payments.RemainingAmount,
+                items = items
+            };
+
+            return Ok(detail);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    private Guid? TryExtractOrderIdFromObservation(string? observation)
+    {
+        if (string.IsNullOrWhiteSpace(observation))
+        {
+            return null;
+        }
+
+        // Formato esperado: "Pagamento do pedido {orderId} - Método: {paymentMethod}"
+        var marker = "Pagamento do pedido ";
+        var methodMarker = " - Método:";
+
+        var startIndex = observation.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (startIndex < 0)
+        {
+            return null;
+        }
+
+        startIndex += marker.Length;
+        var endIndex = observation.IndexOf(methodMarker, startIndex, StringComparison.OrdinalIgnoreCase);
+        if (endIndex < 0)
+        {
+            endIndex = observation.Length;
+        }
+
+        var idText = observation.Substring(startIndex, endIndex - startIndex).Trim();
+
+        if (Guid.TryParse(idText, out var orderId))
+        {
+            return orderId;
+        }
+
+        return null;
+    }
 }
 
 public class OpenCashierRequestDto

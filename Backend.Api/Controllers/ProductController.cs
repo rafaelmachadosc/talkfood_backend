@@ -2,6 +2,7 @@ using Backend.Application.DTOs.Product;
 using Backend.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace Backend.Api.Controllers;
@@ -12,10 +13,12 @@ namespace Backend.Api.Controllers;
 public class ProductController : ControllerBase
 {
     private readonly ProductService _productService;
+    private readonly ILogger<ProductController> _logger;
 
-    public ProductController(ProductService productService)
+    public ProductController(ProductService productService, ILogger<ProductController> logger)
     {
         _productService = productService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -24,18 +27,43 @@ public class ProductController : ControllerBase
     {
         try
         {
+            // Validações básicas
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(new { error = "Nome do produto é obrigatório" });
+            }
+
+            if (request.Price < 0)
+            {
+                return BadRequest(new { error = "Preço não pode ser negativo" });
+            }
+
             var product = await _productService.CreateProductAsync(
-                request.Name,
+                request.Name.Trim(),
                 request.Price,
-                request.Description,
+                request.Description ?? string.Empty,
                 request.Category ?? string.Empty,
                 cancellationToken
             );
+            
             return Ok(product);
+        }
+        catch (DbUpdateException dbEx)
+        {
+            // Erro específico do banco de dados
+            _logger.LogError(dbEx, "Erro ao salvar produto no banco de dados: {Message}", dbEx.Message);
+            return StatusCode(500, new { 
+                error = "Erro ao salvar no banco de dados", 
+                details = dbEx.InnerException?.Message ?? dbEx.Message 
+            });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            _logger.LogError(ex, "Erro ao criar produto: {Message}", ex.Message);
+            return StatusCode(500, new { 
+                error = "Erro ao criar produto", 
+                details = ex.Message
+            });
         }
     }
 

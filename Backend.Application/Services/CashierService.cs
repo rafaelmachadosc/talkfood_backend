@@ -183,7 +183,32 @@ public class CashierService
             Observation = movement.Observation,
             CashierId = movement.CashierId,
             CreatedAt = movement.CreatedAt,
-            Change = change
+            Change = change,
+            PaymentMethod = paymentMethod
         };
+    }
+
+    public async Task<IEnumerable<CashierMovementDto>> GetSalesByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    {
+        var cashiers = await _cashierRepository.GetAllAsync(cancellationToken);
+        var targetDate = date.Date;
+
+        var salesMovements = cashiers
+            .SelectMany(c => c.Movements)
+            .Where(m => m.Type == "SALE" && m.CreatedAt.Date == targetDate)
+            .OrderBy(m => m.CreatedAt)
+            .ToList();
+
+        return salesMovements.Select(m => new CashierMovementDto
+        {
+            Id = m.Id,
+            Type = m.Type,
+            Amount = m.Amount,
+            Observation = m.Observation,
+            CashierId = m.CashierId,
+            CreatedAt = m.CreatedAt,
+            Change = 0,
+            PaymentMethod = m.PaymentMethod
+        });
     }
 }

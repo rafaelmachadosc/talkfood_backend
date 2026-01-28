@@ -76,6 +76,69 @@ public class OrderService
         return MapToDto(updatedOrder!);
     }
 
+    /// <summary>
+    /// Atualiza a quantidade de um item no pedido usando um delta (+/-).
+    /// Se o item não existir e o delta for positivo, cria o item.
+    /// Se a quantidade final for menor ou igual a zero, remove o item.
+    /// Sempre ignora itens já pagos.
+    /// </summary>
+    public async Task<OrderDto> UpdateItemQuantityAsync(Guid orderId, Guid productId, int delta, CancellationToken cancellationToken = default)
+    {
+        if (delta == 0)
+        {
+            throw new InvalidOperationException("Delta deve ser diferente de zero");
+        }
+
+        var order = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        if (order == null)
+        {
+            throw new KeyNotFoundException("Pedido não encontrado");
+        }
+
+        // Considerar apenas itens não pagos
+        var item = order.Items?.FirstOrDefault(i => i.ProductId == productId && !i.IsPaid);
+
+        if (item == null)
+        {
+            if (delta < 0)
+            {
+                throw new InvalidOperationException("Não é possível diminuir a quantidade de um item que não existe no pedido");
+            }
+
+            var product = await _productRepository.GetByIdAsync(productId, cancellationToken);
+            if (product == null)
+            {
+                throw new KeyNotFoundException("Produto não encontrado");
+            }
+
+            var newItem = new Item
+            {
+                OrderId = orderId,
+                ProductId = productId,
+                Amount = delta
+            };
+
+            await _itemRepository.AddAsync(newItem, cancellationToken);
+        }
+        else
+        {
+            var newAmount = item.Amount + delta;
+
+            if (newAmount <= 0)
+            {
+                await _itemRepository.DeleteAsync(item, cancellationToken);
+            }
+            else
+            {
+                item.Amount = newAmount;
+                await _itemRepository.UpdateAsync(item, cancellationToken);
+            }
+        }
+
+        var updatedOrder = await _orderRepository.GetByIdAsync(orderId, cancellationToken);
+        return MapToDto(updatedOrder!);
+    }
+
     public async Task RemoveItemAsync(Guid itemId, CancellationToken cancellationToken = default)
     {
         var item = await _itemRepository.GetByIdAsync(itemId, cancellationToken);
