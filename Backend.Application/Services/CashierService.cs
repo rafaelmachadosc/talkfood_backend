@@ -30,10 +30,13 @@ public class CashierService
             };
         }
 
+        // Garantir que IsOpen está sincronizado com ClosedAt
+        var isOpen = activeCashier.ClosedAt == null;
+
         return new CashierDto
         {
             Id = activeCashier.Id,
-            IsOpen = activeCashier.IsOpen,
+            IsOpen = isOpen,
             OpenedAt = activeCashier.OpenedAt,
             ClosedAt = activeCashier.ClosedAt,
             OpenedBy = activeCashier.OpenedBy,
@@ -113,20 +116,10 @@ public class CashierService
         };
 
         activeCashier.Movements.Add(movement);
-        try
-        {
-            await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            // Se for exceção de concorrência (linha não encontrada), apenas ignora e continua
-            if (!ex.GetType().Name.Contains("DbUpdateConcurrencyException", StringComparison.Ordinal))
-            {
-                throw;
-            }
-        }
+        
+        await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
 
-        // Recarregar o caixa após atualizar
+        // Recarregar o caixa após atualizar para garantir dados corretos
         var updatedCashier = await _cashierRepository.GetByIdAsync(activeCashier.Id, cancellationToken);
 
         if (updatedCashier == null)
@@ -134,10 +127,13 @@ public class CashierService
             throw new InvalidOperationException("Erro ao recarregar caixa após fechamento");
         }
 
+        // Garantir que IsOpen está sincronizado com ClosedAt
+        var isOpen = updatedCashier.ClosedAt == null;
+
         return new CashierDto
         {
             Id = updatedCashier.Id,
-            IsOpen = updatedCashier.IsOpen,
+            IsOpen = isOpen,
             OpenedAt = updatedCashier.OpenedAt,
             ClosedAt = updatedCashier.ClosedAt,
             OpenedBy = updatedCashier.OpenedBy,
