@@ -1,7 +1,6 @@
 using Backend.Application.DTOs.Cashier;
 using Backend.Application.Interfaces;
 using Backend.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Application.Services;
 
@@ -108,14 +107,7 @@ public class CashierService
         };
 
         activeCashier.Movements.Add(movement);
-        try
-        {
-            await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Se outro processo já atualizou/fechou o caixa, apenas segue adiante
-        }
+        await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
 
         // Recarregar o caixa após atualizar (incluindo Movements)
         var allCashiers = await _cashierRepository.GetAllAsync(cancellationToken);
