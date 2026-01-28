@@ -17,8 +17,10 @@ public class CashierService
 
     public async Task<CashierDto> GetCashierStatusAsync(CancellationToken cancellationToken = default)
     {
-        var cashiers = await _cashierRepository.GetAllAsync(cancellationToken);
-        var activeCashier = cashiers.FirstOrDefault(c => c.IsOpen);
+        var activeCashier = await _cashierRepository.FirstOrDefaultAsync(
+            c => c.ClosedAt == null,
+            cancellationToken
+        );
 
         if (activeCashier == null)
         {
@@ -44,8 +46,10 @@ public class CashierService
 
     public async Task<CashierDto> OpenCashierAsync(int initialAmount, Guid userId, CancellationToken cancellationToken = default)
     {
-        var cashiers = await _cashierRepository.GetAllAsync(cancellationToken);
-        var activeCashier = cashiers.FirstOrDefault(c => c.IsOpen);
+        var activeCashier = await _cashierRepository.FirstOrDefaultAsync(
+            c => c.ClosedAt == null,
+            cancellationToken
+        );
 
         if (activeCashier != null)
         {
@@ -87,8 +91,10 @@ public class CashierService
 
     public async Task<CashierDto> CloseCashierAsync(CancellationToken cancellationToken = default)
     {
-        var cashiers = await _cashierRepository.GetAllAsync(cancellationToken);
-        var activeCashier = cashiers.FirstOrDefault(c => c.IsOpen);
+        var activeCashier = await _cashierRepository.FirstOrDefaultAsync(
+            c => c.ClosedAt == null,
+            cancellationToken
+        );
 
         if (activeCashier == null)
         {
@@ -107,11 +113,21 @@ public class CashierService
         };
 
         activeCashier.Movements.Add(movement);
-        await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
+        try
+        {
+            await _cashierRepository.UpdateAsync(activeCashier, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Se for exceção de concorrência (linha não encontrada), apenas ignora e continua
+            if (!ex.GetType().Name.Contains("DbUpdateConcurrencyException", StringComparison.Ordinal))
+            {
+                throw;
+            }
+        }
 
-        // Recarregar o caixa após atualizar (incluindo Movements)
-        var allCashiers = await _cashierRepository.GetAllAsync(cancellationToken);
-        var updatedCashier = allCashiers.FirstOrDefault(c => c.Id == activeCashier.Id);
+        // Recarregar o caixa após atualizar
+        var updatedCashier = await _cashierRepository.GetByIdAsync(activeCashier.Id, cancellationToken);
 
         if (updatedCashier == null)
         {
